@@ -19,6 +19,7 @@ export async function POST(req: Request) {
 
     const result = await model.generateContent([
       systemInstruction,
+      "IMPORTANT: Detect the language of the 'User Input'. The 'Enhanced Prompt' or generated content MUST be in the SAME language as the 'User Input'.",
       `Target Platform: ${platform}`,
       `User Input: ${prompt}\n\nEnhanced Prompt:`,
     ]);

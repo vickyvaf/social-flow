@@ -1,3 +1,5 @@
+import ReactMarkdown from "react-markdown";
+
 interface PreviewPanelProps {
   content?: string;
   isLocked?: boolean;
@@ -64,7 +66,44 @@ export function PreviewPanel({
           </div>
         ) : (
           <div className="h-full w-full overflow-y-auto text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-            {content}
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => (
+                  <p className="mb-4 last:mb-0">{children}</p>
+                ),
+                h1: ({ children }) => (
+                  <h1 className="mb-4 text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                    {children}
+                  </h1>
+                ),
+                h2: ({ children }) => (
+                  <h2 className="mb-3 mt-6 text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                    {children}
+                  </h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="mb-2 mt-4 text-base font-bold text-zinc-900 dark:text-zinc-100">
+                    {children}
+                  </h3>
+                ),
+                ul: ({ children }) => (
+                  <ul className="mb-4 list-disc pl-4 space-y-1">{children}</ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="mb-4 list-decimal pl-4 space-y-1">
+                    {children}
+                  </ol>
+                ),
+                li: ({ children }) => <li className="pl-1">{children}</li>,
+                strong: ({ children }) => (
+                  <strong className="font-semibold text-zinc-900 dark:text-zinc-100">
+                    {children}
+                  </strong>
+                ),
+              }}
+            >
+              {content}
+            </ReactMarkdown>
           </div>
         )}
       </div>
