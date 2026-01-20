@@ -7,7 +7,7 @@ const client = createThirdwebClient({
 });
 const thirdwebX402Facilitator = facilitator({
   client,
-  serverWalletAddress: process.env.SERVER_WALLET_ADDRESS || "",
+  serverWalletAddress: process.env.NEXT_PUBLIC_SERVER_WALLET_ADDRESS || "",
 });
 
 export async function GET(request: Request) {
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     resourceUrl: "https://api.example.com/premium-content",
     method: "GET",
     paymentData,
-    payTo: process.env.SERVER_WALLET_ADDRESS || "",
+    payTo: process.env.NEXT_PUBLIC_SERVER_WALLET_ADDRESS || "",
     network: arbitrumSepolia,
     price: "$0.01",
     facilitator: thirdwebX402Facilitator,

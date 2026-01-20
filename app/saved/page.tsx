@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { supabase } from "@/utils/supabase/client";
+import { supabase } from "@/supabase/client";
 import ReactMarkdown from "react-markdown";
 import { prepareTransaction, toWei } from "thirdweb";
 import { useSendTransaction, useActiveAccount } from "thirdweb/react";
@@ -12,6 +12,7 @@ import { client } from "@/app/client";
 import { AlertModal } from "@/components/ui/AlertModal";
 import { ContentDetailModal } from "@/components/ui/ContentDetailModal";
 import { Toast } from "@/components/ui/Toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface SavedContent {
   wallet_address: string;
@@ -176,10 +177,12 @@ export default function SavedContentPage() {
     // Create a transaction (mock payment of 0 ETH/IDRX equivalent)
     // Sending to self to be safe and simple for demo
     const transaction = prepareTransaction({
-      to: account.address || "0x0000000000000000000000000000000000000000",
+      to:
+        process.env.NEXT_PUBLIC_SERVER_WALLET_ADDRESS ||
+        "0x0000000000000000000000000000000000000000",
       chain: defineChain(8453), // Base Mainnet
       client: client,
-      value: toWei("0"), // 0 value for now
+      value: toWei("0.000003"), // Approx 0.01 USD
     });
 
     try {
@@ -190,6 +193,27 @@ export default function SavedContentPage() {
             .from("saved_content")
             .update({ tx_hash: tx.transactionHash })
             .eq("id", item.id);
+
+          // Record transaction in transactions table
+          try {
+            const {
+              data: { user },
+            } = await supabase.auth.getUser();
+            if (user) {
+              await supabase.from("transactions").insert({
+                user_id: user.id,
+                saved_content_id: item.id,
+                tx_hash: tx.transactionHash,
+                chain_id: 8453,
+                token_symbol: "ETH",
+                amount: 0.000003,
+                status: "success",
+                token_address: null,
+              });
+            }
+          } catch (txErr) {
+            console.error("Failed to record transaction:", txErr);
+          }
 
           if (error) {
             console.error("Error saving tx_hash:", error);
@@ -285,28 +309,43 @@ export default function SavedContentPage() {
             </div>
           </div>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center p-12">
-              <svg
-                className="h-8 w-8 animate-spin text-blue-600"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
+          {isLoading && account ? (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                >
+                  <div className="mb-4 flex items-center justify-between">
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-6 w-6 rounded-md" />
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <Skeleton className="mb-2 h-4 w-16" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="mt-1 h-4 w-3/4" />
+                  </div>
+
+                  <div className="flex-1 rounded-lg bg-zinc-50 p-4 dark:bg-black/50">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-5/6" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-4/6" />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <Skeleton className="h-9 w-20 rounded-lg" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : savedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-white p-12 text-center dark:border-zinc-800 dark:bg-zinc-900">

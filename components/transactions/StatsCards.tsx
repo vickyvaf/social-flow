@@ -1,4 +1,75 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useActiveAccount, useWalletBalance } from "thirdweb/react";
+import { supabase } from "@/supabase/client";
+import { defineChain } from "thirdweb/chains";
+import { client } from "@/app/client";
+import { Skeleton } from "@/components/ui/skeleton";
+
 export function StatsCards() {
+  const account = useActiveAccount();
+  const [stats, setStats] = useState({
+    totalSpent: 0,
+    totalTransactions: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Note: For "Current Balance", we usually need to read from the chain.
+  // For "Total Spent", we can aggregate from transactions table.
+
+  useEffect(() => {
+    async function fetchStats() {
+      if (!account) return;
+
+      setIsLoading(true);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Fetch transactions for stats
+        const { data: transactions } = await supabase
+          .from("transactions")
+          .select("amount, status, created_at")
+          .eq("user_id", user.id);
+
+        if (transactions) {
+          const totalSpent = transactions
+            .filter((t) => t.status === "success")
+            .reduce((acc, curr) => acc + Number(curr.amount), 0);
+
+          // Count recent (last 30 days)
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+          const recentCount = transactions.filter(
+            (t) => new Date(t.created_at) > thirtyDaysAgo,
+          ).length;
+
+          setStats({
+            totalSpent,
+            totalTransactions: recentCount,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchStats();
+  }, [account]);
+
+  // Hook for balance
+  const { data: balanceData, isLoading: isBalanceLoading } = useWalletBalance({
+    chain: defineChain(8453), // Base
+    address: account?.address,
+    client: client,
+  });
+
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {/* Total Spent Card */}
@@ -23,14 +94,15 @@ export function StatsCards() {
           </div>
         </div>
         <div className="mb-1 text-3xl font-bold text-zinc-900 dark:text-white">
-          450.00 IDRX
+          {isLoading ? (
+            <Skeleton className="h-9 w-32" />
+          ) : (
+            `${stats.totalSpent.toFixed(6)} ETH`
+          )}
         </div>
         <div className="flex items-center gap-1 text-xs">
-          <span className="font-medium text-green-600 dark:text-green-400">
-            ↑ 12.5%
-          </span>
           <span className="text-zinc-500 dark:text-zinc-400">
-            from last month
+            Lifetime spend
           </span>
         </div>
       </div>
@@ -39,7 +111,7 @@ export function StatsCards() {
       <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
         <div className="mb-4 flex items-start justify-between">
           <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-            Recent Activity
+            Recent Activity (30d)
           </span>
           <div className="rounded-lg bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
             <svg
@@ -52,18 +124,19 @@ export function StatsCards() {
               <path
                 fillRule="evenodd"
                 d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.75-10.5v4.5h4.5a.75.75 0 000-1.5h-3.75v-3a.75.75 0 00-1.5 0z"
-                clipRule="evenodd" // Removed duplicate clipRule
+                clipRule="evenodd"
               />
             </svg>
           </div>
         </div>
         <div className="mb-1 text-3xl font-bold text-zinc-900 dark:text-white">
-          12 Posts
+          {isLoading ? (
+            <Skeleton className="h-9 w-24" />
+          ) : (
+            `${stats.totalTransactions} Txns`
+          )}
         </div>
         <div className="flex items-center gap-1 text-xs">
-          <span className="font-medium text-green-600 dark:text-green-400">
-            ↑ 3%
-          </span>
           <span className="text-zinc-500 dark:text-zinc-400">last 30 days</span>
         </div>
       </div>
@@ -90,11 +163,19 @@ export function StatsCards() {
           </div>
         </div>
         <div className="mb-1 text-3xl font-bold text-zinc-900 dark:text-white">
-          1,240.50 IDRX
+          {isBalanceLoading || isLoading ? (
+            <Skeleton className="h-9 w-32" />
+          ) : (
+            `${
+              balanceData
+                ? Number(balanceData.displayValue).toFixed(4)
+                : "0.0000"
+            } ${balanceData?.symbol || "ETH"}`
+          )}
         </div>
         <div className="flex items-center gap-1 text-xs">
           <span className="text-zinc-500 dark:text-zinc-400">
-            Connected to Polygon Mainnet
+            Connected to Base Mainnet
           </span>
         </div>
       </div>

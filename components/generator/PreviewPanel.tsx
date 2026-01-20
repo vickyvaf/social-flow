@@ -1,5 +1,5 @@
 import { Toast } from "@/components/ui/Toast";
-import { supabase } from "@/utils/supabase/client";
+import { supabase } from "@/supabase/client";
 import { client } from "@/app/client";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -50,18 +50,20 @@ export function PreviewPanel({
         message: "Please connect your wallet to save content",
         type: "error",
       });
-      return;
+      return null;
     }
 
-    if (!content || isSaved) return;
+    if (!content || isSaved) return null;
 
     // Save to database
     if (prompt && platform && address) {
       setIsSaving(true);
       try {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("saved_content")
-          .insert([{ wallet_address: address, content, prompt, platform }]);
+          .insert([{ wallet_address: address, content, prompt, platform }])
+          .select()
+          .single();
 
         if (error) {
           console.error("Error saving to database:", error);
@@ -70,6 +72,7 @@ export function PreviewPanel({
             message: "Failed to save: " + error.message,
             type: "error",
           });
+          return null;
         } else {
           setIsSaved(true);
           setToast({
@@ -77,6 +80,7 @@ export function PreviewPanel({
             message: "Content saved successfully!",
             type: "success",
           });
+          return data;
         }
       } catch (err) {
         console.error("Unexpected error saving to database:", err);
@@ -85,10 +89,12 @@ export function PreviewPanel({
           message: "An unexpected error occurred.",
           type: "error",
         });
+        return null;
       } finally {
         setIsSaving(false);
       }
     }
+    return null;
   };
 
   // Transaction hook
@@ -113,7 +119,7 @@ export function PreviewPanel({
       to: address || "0x0000000000000000000000000000000000000000",
       chain: defineChain(8453), // Base Mainnet
       client: client,
-      value: toWei("0"), // 0 value for now
+      value: toWei("0.000003"), // Approx 0.01 USD
     });
 
     try {
@@ -124,14 +130,43 @@ export function PreviewPanel({
       });
 
       sendTransaction(transaction, {
-        onSuccess: async () => {
+        onSuccess: async (tx) => {
           // 3. On success, copy to clipboard
           try {
             await navigator.clipboard.writeText(content);
             setCopySuccess(true);
 
             // Auto-save the content
-            handleSave();
+            const savedItem = await handleSave();
+
+            // Record transaction in DB
+            if (savedItem && address) {
+              try {
+                // Get user ID
+                const {
+                  data: { user },
+                } = await supabase.auth.getUser();
+
+                if (user) {
+                  await supabase.from("transactions").insert({
+                    user_id: user.id,
+                    saved_content_id: savedItem.id,
+                    tx_hash: tx.transactionHash,
+                    chain_id: 8453,
+                    token_symbol: "ETH",
+                    amount: 0.000003,
+                    status: "success",
+                    token_address: null,
+                  });
+                } else {
+                  console.warn(
+                    "User not authenticated, skipping transaction record creation (RLS might prevent anon insert)",
+                  );
+                }
+              } catch (txErr) {
+                console.error("Failed to record transaction:", txErr);
+              }
+            }
 
             setToast({
               show: true,
