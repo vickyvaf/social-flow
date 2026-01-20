@@ -1,8 +1,6 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
-import { StatsCards } from "@/components/transactions/StatsCards";
-import { TransactionTable } from "@/components/transactions/TransactionTable";
-import { PromoBanner } from "@/components/transactions/PromoBanner";
+import { TransactionPageContent } from "@/components/transactions/TransactionPageContent";
 
 export default function TransactionsPage() {
   return (
@@ -21,11 +19,7 @@ export default function TransactionsPage() {
             </p>
           </div>
 
-          <div className="space-y-8">
-            <StatsCards />
-            <TransactionTable />
-            <PromoBanner />
-          </div>
+          <TransactionPageContent />
         </div>
       </main>
 
