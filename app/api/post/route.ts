@@ -29,8 +29,7 @@ export async function POST(request: NextRequest) {
       };
 
       if (scheduledFor) {
-        payload.publishNow = false;
-        payload.scheduleDate = scheduledFor;
+        payload.scheduledFor = scheduledFor;
       } else {
         payload.publishNow = true;
       }
