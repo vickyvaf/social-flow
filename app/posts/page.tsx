@@ -4,7 +4,7 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AlertModal } from "@/components/ui/AlertModal";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { format } from "date-fns";
 
 interface Post {
@@ -76,6 +76,52 @@ const PLATFORM_ICONS: Record<string, React.ReactNode> = {
 };
 
 export default function PostsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen flex-col bg-zinc-50 dark:bg-black">
+          <Header />
+          <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
+            <div className="container mx-auto max-w-7xl">
+              <div className="mb-8 space-y-2">
+                <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">
+                  Posts
+                </h1>
+                <div className="animate-pulse h-4 w-64 bg-zinc-200 dark:bg-zinc-800 rounded"></div>
+              </div>
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+                  >
+                    <div className="flex animate-pulse items-start justify-between gap-4">
+                      <div className="flex-1 space-y-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-5 w-20 rounded-full bg-zinc-200 dark:bg-zinc-800"></div>
+                          <div className="h-5 w-24 rounded-full bg-zinc-200 dark:bg-zinc-800"></div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-4 w-3/4 rounded bg-zinc-200 dark:bg-zinc-800"></div>
+                          <div className="h-4 w-1/2 rounded bg-zinc-200 dark:bg-zinc-800"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </main>
+          <Footer />
+        </div>
+      }
+    >
+      <PostsContent />
+    </Suspense>
+  );
+}
+
+function PostsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
