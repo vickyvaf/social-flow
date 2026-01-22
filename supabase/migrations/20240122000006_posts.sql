@@ -1,4 +1,12 @@
 -- Posts table
+create type post_status as enum (
+  'draft',
+  'pending',
+  'scheduled',
+  'published',
+  'failed'
+);
+
 create table public.posts (
   id uuid primary key default gen_random_uuid(),
 

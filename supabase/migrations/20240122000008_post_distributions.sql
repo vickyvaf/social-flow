@@ -1,11 +1,5 @@
 -- Post distributions migration
-create type post_status as enum (
-  'draft',
-  'pending',
-  'scheduled',
-  'published',
-  'failed'
-);
+
 
 create table public.post_distributions (
   id uuid primary key default gen_random_uuid(),
@@ -16,7 +10,7 @@ create table public.post_distributions (
 
   platform oauth_provider not null,
   platform_name text, -- platform snapshot
-  username text, -- username snapshot
+  username text not null, -- username snapshot
 
   oauth_account_id uuid
     references public.oauth_accounts(id)

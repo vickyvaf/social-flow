@@ -224,10 +224,17 @@ function PostsContent() {
 
     setIsDeleting(true);
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       const response = await fetch(
         `/api/posts/${postToDelete._id || postToDelete.id}`,
         {
           method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${session?.access_token}`,
+          },
         },
       );
 
@@ -272,7 +279,15 @@ function PostsContent() {
         queryParams.append("platform", platformFilter);
       }
 
-      const res = await fetch(`/api/posts?${queryParams.toString()}`);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const res = await fetch(`/api/posts?${queryParams.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
       const data = await res.json();
       const newPostsRaw: Post[] = data.posts || [];
       const newPosts = newPostsRaw.filter((p) => p.status !== "failed");
@@ -497,17 +512,21 @@ function PostsContent() {
                     <div className="flex-1">
                       <div className="mb-2 flex items-center gap-2">
                         {/* @ts-ignore */}
-                        {post.platforms?.map(({ _id, platform, accountId }) => {
-                          return (
-                            <PlatformBadge
-                              key={_id}
-                              platform={platform}
-                              username={
-                                accountId?.username || accountId?.displayName
-                              }
-                            />
-                          );
-                        })}
+                        {(post.post_distributions || post.platforms)?.map(
+                          ({ id, _id, platform, username, accountId }: any) => {
+                            return (
+                              <PlatformBadge
+                                key={id || _id}
+                                platform={platform}
+                                username={
+                                  username ||
+                                  accountId?.username ||
+                                  accountId?.displayName
+                                }
+                              />
+                            );
+                          },
+                        )}
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
                             post.status === "published"

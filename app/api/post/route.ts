@@ -43,6 +43,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // 1. Credit Check
+    const { data: creditData, error: creditError } = await supabaseClient
+      .from("user_credits")
+      .select("credits_remaining")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (creditError || !creditData || creditData.credits_remaining <= 0) {
+      return NextResponse.json(
+        {
+          error: "Insufficient credits",
+          message: "You have run out of credits. Please top up to continue.",
+        },
+        { status: 403 },
+      );
+    }
+
     const platformPayloads = [];
     for (const p of platformsToProcess) {
       const accountIdCookieName = `${p}_account_id`;
@@ -161,6 +178,31 @@ export async function POST(request: NextRequest) {
               );
             }
           }
+        }
+      }
+
+      // 3. Deduct Credit
+      const { error: updateError } = await supabaseClient.rpc("deduct_credit", {
+        p_user_id: user.id,
+      });
+
+      // If RPC fails (e.g. not defined), fallback to manual update
+      if (updateError) {
+        console.warn(
+          "RPC deduct_credit failed, falling back to manual update",
+          updateError,
+        );
+        const { data: currentCredits } = await supabaseClient
+          .from("user_credits")
+          .select("credits_remaining")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (currentCredits) {
+          await supabaseClient
+            .from("user_credits")
+            .update({ credits_remaining: currentCredits.credits_remaining - 1 })
+            .eq("user_id", user.id);
         }
       }
 

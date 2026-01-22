@@ -1,84 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getLateClient } from "@/lib/getlate";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET(request: NextRequest) {
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Initial auth check
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const platform = searchParams.get("platform");
     const status = searchParams.get("status");
 
-    // Extract account IDs from cookies
-    const twitterAccountId = request.cookies.get("twitter_account_id")?.value;
-    const threadsAccountId = request.cookies.get("threads_account_id")?.value;
-    const linkedinAccountId = request.cookies.get("linkedin_account_id")?.value;
-    const instagramAccountId = request.cookies.get(
-      "instagram_account_id",
-    )?.value;
+    // Calculate range
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
 
-    const accountIds: string[] = [];
-    if (platform) {
-      const specificAccountId = request.cookies.get(
-        `${platform}_account_id`,
-      )?.value;
-      if (specificAccountId) {
-        accountIds.push(specificAccountId);
-      } else {
-        // If specific platform requested but no account ID found, return empty
-        return NextResponse.json({ posts: [] });
-      }
-    } else {
-      // If no platform specified, collect all connected account IDs
-      if (twitterAccountId) accountIds.push(twitterAccountId);
-      if (threadsAccountId) accountIds.push(threadsAccountId);
-      if (linkedinAccountId) accountIds.push(linkedinAccountId);
-      if (instagramAccountId) accountIds.push(instagramAccountId);
+    // Determine select string based on platform filter
+    // If filtering by platform, use !inner to filter parent posts by child existence
+    const selectStr =
+      platform && platform !== "all"
+        ? "*, post_distributions!inner(*)"
+        : "*, post_distributions(*)";
+
+    let query = supabase
+      .from("posts")
+      .select(selectStr, { count: "exact" })
+      .eq("user_id", user.id)
+      .range(from, to)
+      .order("created_at", { ascending: false });
+
+    // Status filter
+    if (status && status !== "all") {
+      query = query.eq("status", status);
     }
 
-    if (accountIds.length === 0) {
-      return NextResponse.json({ posts: [] });
+    // Platform filter
+    if (platform && platform !== "all") {
+      query = query.eq("post_distributions.platform", platform);
     }
 
-    const query: any = {
-      page,
-      limit,
-      accountId: accountIds.length === 1 ? accountIds[0] : accountIds,
-    };
+    const { data: posts, error, count } = await query;
 
-    if (platform) query.platform = platform;
-    if (status) query.status = status;
-
-    const late = getLateClient();
-    const response = await late.posts.listPosts({
-      query,
-    });
-
-    // Check structure
-    let posts: any[] = [];
-    if (response && response.data && Array.isArray(response.data.posts)) {
-      posts = response.data.posts;
-    } else if (Array.isArray(response)) {
-      posts = response;
-    } else if (response && Array.isArray(response.data)) {
-      posts = response.data;
+    if (error) {
+      throw error;
     }
 
-    // Manual filtering by account ID as a fallback/reinforcement
-    if (accountIds.length > 0) {
-      posts = posts.filter((post: any) => {
-        // A post matches if any of its platforms targets one of our logged-in accounts
-        return post.platforms?.some((p: any) => {
-          const pAccountId =
-            typeof p.accountId === "string"
-              ? p.accountId
-              : p.accountId?._id || p.accountId?.id;
-          return accountIds.includes(pAccountId);
-        });
-      });
-    }
-
-    return NextResponse.json({ posts });
+    return NextResponse.json({ posts, count });
   } catch (error: any) {
     console.error("Error fetching posts:", error);
     return NextResponse.json(
