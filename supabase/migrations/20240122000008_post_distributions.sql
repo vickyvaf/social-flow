@@ -1,6 +1,7 @@
 -- Post distributions migration
 create type post_status as enum (
   'draft',
+  'pending',
   'scheduled',
   'published',
   'failed'
@@ -14,6 +15,8 @@ create table public.post_distributions (
     on delete cascade,
 
   platform oauth_provider not null,
+  platform_name text, -- platform snapshot
+  username text, -- username snapshot
 
   oauth_account_id uuid
     references public.oauth_accounts(id)
@@ -21,6 +24,7 @@ create table public.post_distributions (
 
   external_post_id text,
   status post_status not null default 'draft',
+  scheduled_for timestamptz,
   error_message text,
 
   created_at timestamptz default now(),

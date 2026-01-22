@@ -167,11 +167,16 @@ export function PreviewPanel({
     // 1. Execute Post (API)
     setPostingType(scheduledForDate ? "scheduled" : "immediate");
     try {
+      // Get the current Supabase session to pass the access token
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
       // Send all platforms in a single request
       const response = await fetch("/api/post", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           platforms: targetPlatforms,

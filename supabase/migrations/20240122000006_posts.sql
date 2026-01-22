@@ -6,8 +6,18 @@ create table public.posts (
     references public.profiles(id)
     on delete cascade,
 
-  content_text text not null,
+  title text not null default '',
+  content text not null,
   image_url text,
+  
+  status post_status not null default 'draft',
+  scheduled_for timestamptz,
+  timezone text not null default 'UTC',
+  visibility text not null default 'public',
+  crossposting_enabled boolean not null default true,
+  metadata jsonb not null default '{}',
+  publish_attempts integer not null default 0,
 
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );

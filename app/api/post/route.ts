@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getLateClient } from "@/lib/getlate";
+import { supabase as supabaseClient } from "@/supabase/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +25,22 @@ export async function POST(request: NextRequest) {
         { error: "No platform specified" },
         { status: 400 },
       );
+    }
+
+    // Authenticate user via Supabase
+    const authHeader = request.headers.get("Authorization");
+    const token = authHeader?.startsWith("Bearer ")
+      ? authHeader.substring(7)
+      : null;
+
+    const {
+      data: { user },
+    } = token
+      ? await supabaseClient.auth.getUser(token)
+      : await supabaseClient.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const platformPayloads = [];
@@ -54,11 +71,100 @@ export async function POST(request: NextRequest) {
         payload.publishNow = true;
       }
 
-      const { data: post } = await late.posts.createPost({
+      const { data: postResult } = await late.posts.createPost({
         body: payload,
       });
 
-      return NextResponse.json({ success: true, result: post });
+      const postResultAny = postResult as any;
+      const externalPostId = postResultAny?._id || postResultAny?.id;
+
+      // 1. Record the post in Supabase
+      const { data: post, error: postError } = await supabaseClient
+        .from("posts")
+        .insert([
+          {
+            user_id: user.id,
+            content: content,
+            status: scheduledFor ? "scheduled" : "published",
+            scheduled_for: scheduledFor || null,
+            metadata: { late_post_id: externalPostId },
+          },
+        ])
+        .select()
+        .single();
+
+      if (postError) {
+        console.error("Error creating post in Supabase:", postError);
+        // We still return success since Late post was created, but log the error
+      } else if (post) {
+        // 2. Record distributions and ensure oauth_accounts exist
+        for (const pPayload of platformPayloads) {
+          const platform = pPayload.platform;
+          const externalAccountId = pPayload.accountId;
+
+          // Find or create oauth_account
+          let { data: oauthAccount } = await supabaseClient
+            .from("oauth_accounts")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("provider", platform)
+            .eq("provider_account_id", externalAccountId)
+            .maybeSingle();
+
+          if (!oauthAccount) {
+            // Get username/display name from cookies if available
+            const username = request.cookies.get(`${platform}_username`)?.value;
+
+            const { data: newAccount, error: accError } = await supabaseClient
+              .from("oauth_accounts")
+              .insert([
+                {
+                  user_id: user.id,
+                  provider: platform,
+                  provider_account_id: externalAccountId,
+                  username: username || null,
+                  access_token: "late_managed", // Marks that tokens are handled by Late
+                },
+              ])
+              .select("id")
+              .single();
+
+            if (accError) {
+              console.error(
+                `Error creating oauth_account for ${platform}:`,
+                accError,
+              );
+            } else {
+              oauthAccount = newAccount;
+            }
+          }
+
+          // Insert distribution
+          if (oauthAccount) {
+            const { error: distError } = await supabaseClient
+              .from("post_distributions")
+              .insert([
+                {
+                  post_id: post.id,
+                  platform: platform,
+                  oauth_account_id: oauthAccount.id,
+                  status: scheduledFor ? "scheduled" : "published",
+                  scheduled_for: scheduledFor || null,
+                  external_post_id: externalPostId,
+                },
+              ]);
+
+            if (distError) {
+              console.error(
+                `Error creating distribution for ${platform}:`,
+                distError,
+              );
+            }
+          }
+        }
+      }
+
+      return NextResponse.json({ success: true, result: postResult });
     } catch (lateError: any) {
       console.error("Late API Error:", lateError);
       return NextResponse.json(
