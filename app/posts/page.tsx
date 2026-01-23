@@ -4,6 +4,7 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { AlertModal } from "@/components/ui/AlertModal";
+import { EditPostModal } from "@/components/posts/EditPostModal";
 import { supabase } from "@/supabase/client";
 import { useEffect, useState, Suspense } from "react";
 import { format } from "date-fns";
@@ -164,6 +165,11 @@ function PostsContent() {
   const [postToDelete, setPostToDelete] = useState<Post | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Edit State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [postToEdit, setPostToEdit] = useState<Post | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+
   // Check Supabase session
   useEffect(() => {
     async function getSession() {
@@ -255,6 +261,58 @@ function PostsContent() {
       // Optional: Add toast notification here
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleEditClick = (post: Post) => {
+    setPostToEdit(post);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSave = async (
+    postId: string,
+    newContent: string,
+    newScheduledFor: string,
+  ) => {
+    setIsEditing(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          content: newContent,
+          scheduledFor: newScheduledFor,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update post");
+      }
+
+      await response.json(); // Consuming response
+
+      // Update state
+      setPosts((prev) =>
+        prev.map((p) =>
+          (p._id || p.id) === postId
+            ? { ...p, content: newContent, scheduledFor: newScheduledFor }
+            : p,
+        ),
+      );
+      setIsEditModalOpen(false);
+      setPostToEdit(null);
+    } catch (error) {
+      console.error("Error updating post:", error);
+      // Optional: Add toast notification
+    } finally {
+      setIsEditing(false);
     }
   };
 
@@ -552,24 +610,41 @@ function PostsContent() {
                     </div>
 
                     {post.status === "scheduled" && (
-                      <button
-                        onClick={() => handleDeleteClick(post)}
-                        className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
-                        title="Delete Scheduled Post"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          className="h-5 w-5"
+                      <>
+                        <button
+                          onClick={() => handleEditClick(post)}
+                          className="rounded-lg p-2 text-zinc-400 hover:bg-blue-50 hover:text-blue-500 dark:text-zinc-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 transition-colors"
+                          title="Edit Scheduled Post"
                         >
-                          <path
-                            fillRule="evenodd"
-                            d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="h-5 w-5"
+                          >
+                            <path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" />
+                            <path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(post)}
+                          className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-colors"
+                          title="Delete Scheduled Post"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            className="h-5 w-5"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -656,6 +731,14 @@ function PostsContent() {
         confirmLabel="Delete"
         isDestructive={true}
         isLoading={isDeleting}
+      />
+
+      <EditPostModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSave={handleEditSave}
+        post={postToEdit}
+        isLoading={isEditing}
       />
 
       <Footer />
