@@ -34,13 +34,12 @@ export async function GET(request: NextRequest) {
 
     // Determine select string based on platform filter
     // If filtering by platform, use !inner to filter parent posts by child existence
-    const selectStr =
-      platform && platform !== "all"
-        ? "*, post_distributions!inner(*)"
-        : "*, post_distributions(*)";
+    // Determine select string based on platform filter
+    // Platforms is now a JSONB column, so we select *
+    const selectStr = "*";
 
     let query = supabase
-      .from("posts")
+      .from("getlate_posts")
       .select(selectStr, { count: "exact" })
       .eq("user_id", user.id)
       .range(from, to)
@@ -51,9 +50,13 @@ export async function GET(request: NextRequest) {
       query = query.eq("status", status);
     }
 
-    // Platform filter
+    // Platform filter: check if the platforms JSONB array contains an object with the specified platform
     if (platform && platform !== "all") {
-      query = query.eq("post_distributions.platform", platform);
+      // Using PostgreSQL JSONB containment operator @>
+      query = query.contains(
+        "platforms",
+        JSON.stringify([{ platform: platform }]),
+      );
     }
 
     const { data: posts, error, count } = await query;

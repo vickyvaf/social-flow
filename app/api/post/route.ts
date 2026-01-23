@@ -124,94 +124,46 @@ export async function POST(request: NextRequest) {
       const postResultAny = postResult as any;
       const externalPostId = postResultAny?._id || postResultAny?.id;
 
-      // 1. Record the post in Supabase
+      // 1. Record the post in Supabase (getlate_posts)
+      // Extract the post object from the result. The user example shows result.post
+      const postData = postResultAny?.post || postResultAny;
+
+      // Map fields from GetLate response to our DB schema
+      const dbPayload = {
+        user_id: user.id, // Internal Supabase ID
+        external_id: postData._id,
+        external_user_id: postData.userId,
+        title: postData.title || "",
+        content: postData.content,
+        media_items: postData.mediaItems || [],
+        platforms: postData.platforms || [],
+        scheduled_for: postData.scheduledFor || null,
+        timezone: postData.timezone || "UTC",
+        status: postData.status || (scheduledFor ? "scheduled" : "published"),
+        tags: postData.tags || [],
+        hashtags: postData.hashtags || [],
+        mentions: postData.mentions || [],
+        visibility: postData.visibility || "public",
+        crossposting_enabled: postData.crosspostingEnabled ?? true,
+        metadata: postData.metadata || {},
+        publish_attempts: postData.publishAttempts || 0,
+      };
+
       const { data: post, error: postError } = await supabaseClient
-        .from("posts")
-        .insert([
-          {
-            user_id: user.id,
-            content: content,
-            status: scheduledFor ? "scheduled" : "published",
-            scheduled_for: scheduledFor || null,
-            metadata: { late_post_id: externalPostId },
-          },
-        ])
+        .from("getlate_posts")
+        .insert([dbPayload])
         .select()
         .single();
 
       if (postError) {
         console.error("Error creating post in Supabase:", postError);
         // We still return success since Late post was created, but log the error
-      } else if (post) {
-        // 2. Record distributions and ensure oauth_accounts exist
-        for (const pPayload of platformPayloads) {
-          const platform = pPayload.platform;
-          const externalAccountId = pPayload.accountId;
+      } else {
+        // Post saved successfully
+        console.log("Post saved to getlate_posts:", post.id);
 
-          // Find or create oauth_account
-          let { data: oauthAccount } = await supabaseClient
-            .from("oauth_accounts")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("provider", platform)
-            .eq("provider_account_id", externalAccountId)
-            .maybeSingle();
-
-          if (!oauthAccount) {
-            // Get username/display name from cookies if available
-            const username = request.cookies.get(`${platform}_username`)?.value;
-
-            const { data: newAccount, error: accError } = await supabaseClient
-              .from("oauth_accounts")
-              .insert([
-                {
-                  user_id: user.id,
-                  provider: platform,
-                  provider_account_id: externalAccountId,
-                  username: username || null,
-                  access_token: "late_managed", // Marks that tokens are handled by Late
-                },
-              ])
-              .select("id")
-              .single();
-
-            if (accError) {
-              console.error(
-                `Error creating oauth_account for ${platform}:`,
-                accError,
-              );
-            } else {
-              oauthAccount = newAccount;
-            }
-          }
-
-          // Insert distribution
-          if (oauthAccount) {
-            const username = request.cookies.get(`${platform}_username`)?.value;
-
-            const { error: distError } = await supabaseClient
-              .from("post_distributions")
-              .insert([
-                {
-                  post_id: post.id,
-                  platform: platform,
-                  platform_name: platform,
-                  username: username,
-                  oauth_account_id: oauthAccount.id,
-                  status: scheduledFor ? "scheduled" : "published",
-                  scheduled_for: scheduledFor || null,
-                  external_post_id: externalPostId,
-                },
-              ]);
-
-            if (distError) {
-              console.error(
-                `Error creating distribution for ${platform}:`,
-                distError,
-              );
-            }
-          }
-        }
+        // We can optionally check/create oauth_accounts here if needed for caching,
+        // but the prompt asked to "directly send all to table getlate_post", so we simplify.
       }
 
       // 3. Deduct Credit (MOVED to before external call)

@@ -17,6 +17,7 @@ interface Post {
   status: string; // published, scheduled, failed
   scheduledFor?: string;
   createdAt: string;
+  updatedAt?: string;
   // Add other fields as discovered
 }
 
@@ -596,20 +597,45 @@ function PostsContent() {
                         >
                           {post.status}
                         </span>
-                        <span className="text-xs text-zinc-400">
-                          {post.status === "scheduled" && post.scheduledFor
-                            ? `Scheduled: ${format(new Date(post.scheduledFor), "MMM d, yyyy HH:mm")}`
-                            : post.status === "published"
-                              ? `Published: ${format(new Date(post.createdAt || new Date()), "MMM d, yyyy HH:mm")}`
-                              : `Created: ${format(new Date(post.createdAt || new Date()), "MMM d, yyyy HH:mm")}`}
-                        </span>
+                        <div className="flex flex-col gap-0.5 text-xs text-zinc-400">
+                          <span>
+                            Created:{" "}
+                            {format(
+                              new Date(post.createdAt || new Date()),
+                              "MMM d, yyyy HH:mm",
+                            )}
+                          </span>
+                          {post.scheduledFor && (
+                            <span>
+                              Scheduled:{" "}
+                              {format(
+                                new Date(post.scheduledFor),
+                                "MMM d, yyyy HH:mm",
+                              )}
+                            </span>
+                          )}
+                          {post.status === "published" && (
+                            <span>
+                              Published:{" "}
+                              {format(
+                                new Date(
+                                  post.updatedAt ||
+                                    post.createdAt ||
+                                    new Date(),
+                                ),
+                                "MMM d, yyyy HH:mm",
+                              )}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <p className="whitespace-pre-wrap text-sm text-zinc-700 dark:text-zinc-300">
                         {post.content}
                       </p>
                     </div>
 
-                    {post.status === "scheduled" && (
+                    {(post.status === "scheduled" ||
+                      post.status === "published") && (
                       <>
                         <button
                           onClick={() => handleEditClick(post)}
@@ -726,8 +752,8 @@ function PostsContent() {
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDeleteConfirm}
-        title="Delete Scheduled Post"
-        message="Are you sure you want to delete this scheduled post? This action cannot be undone."
+        title="Delete Post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
         confirmLabel="Delete"
         isDestructive={true}
         isLoading={isDeleting}

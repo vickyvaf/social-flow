@@ -63,19 +63,36 @@ create table public.transactions (
   -- constraints
   unique (tx_hash)
 );
--- Posts table
-create table public.posts (
+-- Posts table (Renamed to getlate_posts)
+create table public.getlate_posts (
   id uuid primary key default gen_random_uuid(),
 
   user_id uuid not null
     references public.profiles(id)
     on delete cascade,
 
-  content_text text not null,
-  image_url text,
+  -- Updated schema matching recent changes
+  external_id text,
+  external_user_id text,
+  title text default '',
+  content text not null,
+  media_items jsonb default '[]'::jsonb,
+  platforms jsonb default '[]'::jsonb,
+  scheduled_for timestamptz,
+  timezone text default 'UTC',
+  status text not null default 'draft',
+  tags jsonb default '[]'::jsonb,
+  hashtags jsonb default '[]'::jsonb,
+  mentions jsonb default '[]'::jsonb,
+  visibility text default 'public',
+  crossposting_enabled boolean default true,
+  metadata jsonb default '{}'::jsonb,
+  publish_attempts integer default 0,
 
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
+
 -- OAuth accounts migration
 create type oauth_provider as enum (
   'twitter',
@@ -116,7 +133,7 @@ create table public.post_distributions (
   id uuid primary key default gen_random_uuid(),
 
   post_id uuid not null
-    references public.posts(id)
+    references public.getlate_posts(id)
     on delete cascade,
 
   platform oauth_provider not null,

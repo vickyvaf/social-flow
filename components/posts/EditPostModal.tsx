@@ -32,14 +32,20 @@ export function EditPostModal({
   useEffect(() => {
     if (post) {
       setContent(post.content);
-      if (post.scheduledFor) {
-        const date = new Date(post.scheduledFor);
-        setScheduleDate(format(date, "yyyy-MM-dd"));
-        setScheduleTime(format(date, "HH:mm"));
+      // Check for 'scheduledFor' (camelCase) or 'scheduled_for' (snake_case from DB)
+      const scheduledVal = post.scheduledFor || (post as any).scheduled_for;
+
+      if (scheduledVal) {
+        const date = new Date(scheduledVal);
+        if (!isNaN(date.getTime())) {
+          setScheduleDate(format(date, "yyyy-MM-dd"));
+          setScheduleTime(format(date, "HH:mm"));
+        }
       } else {
-        // Default to now if no schedule? Or keep empty?
-        // Logic: if editing a scheduled post, it must have a schedule.
-        // If somehow it doesn't, we can default to something or let user pick.
+        // If "kasih default valuenya" implies providing a default starting point (e.g. now)
+        // when there is no schedule, we can uncomment the below.
+        // But for "Edit", preserving existing is priority.
+        // Assuming the issue was missing data due to case mismatch.
       }
     }
   }, [post]);
