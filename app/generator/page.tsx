@@ -134,6 +134,7 @@ function GeneratorContent() {
         fetchCredits(currentUser.id);
       } else {
         setCredits(null);
+        router.push("/");
       }
     });
 

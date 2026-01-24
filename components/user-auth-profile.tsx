@@ -14,6 +14,7 @@ import { createWallet } from "thirdweb/wallets";
 import { supabase } from "@/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { TopUpModal } from "./TopUpModal";
+import { useRouter } from "next/navigation";
 
 const wallets = [
   createWallet("io.metamask"),
@@ -23,6 +24,7 @@ const wallets = [
 ];
 
 export function UserAuthProfile() {
+  const router = useRouter();
   const account = useActiveAccount();
   const wallet = useActiveWallet();
   const { disconnect } = useDisconnect();
@@ -195,6 +197,7 @@ export function UserAuthProfile() {
     });
 
     window.location.reload();
+    router.push("/");
   };
 
   const handleSignIn = async () => {

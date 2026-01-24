@@ -186,7 +186,11 @@ function PostsContent() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (!currentUser) {
+        router.push("/");
+      }
     });
 
     return () => subscription.unsubscribe();
