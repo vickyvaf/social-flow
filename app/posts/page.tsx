@@ -472,7 +472,7 @@ function PostsContent() {
   }
 
   return (
-    <div className="flex flex-col bg-zinc-50 dark:bg-black">
+    <div className="flex flex-col h-[calc(100vh-60px)] bg-zinc-50 dark:bg-black">
       <Header />
 
       <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
@@ -526,7 +526,7 @@ function PostsContent() {
           </div>
 
           {/* List */}
-          <div className="space-y-4">
+          <div className="space-y-4 pb-12">
             {posts.map((post) => {
               console.log("post", post);
 

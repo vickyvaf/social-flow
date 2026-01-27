@@ -43,8 +43,8 @@ export function Toast({
 
   return (
     <div
-      className={`fixed bottom-8 right-8 z-50 flex items-center gap-3 rounded-lg border px-4 py-3 shadow-lg transition-all duration-300 transform ${
-        isVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
+      className={`fixed top-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-lg border px-4 py-3 shadow-lg transition-all duration-300 transform ${
+        isVisible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0"
       } ${
         type === "success"
           ? "border-green-200 bg-green-50 text-green-800 dark:border-green-900/30 dark:bg-green-900/20 dark:text-green-300"
