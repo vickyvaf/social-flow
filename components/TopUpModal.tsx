@@ -189,7 +189,7 @@ export function TopUpModal({
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-6 pb-3 overflow-y-auto flex-1">
           {isSuccess ? (
             <div className="flex flex-col items-center justify-center py-8 text-center animate-in fade-in zoom-in duration-500">
               <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
@@ -240,11 +240,6 @@ export function TopUpModal({
             </div>
           ) : (
             <>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
-                Choose a credit package to continue generating and posting
-                content.
-              </p>
-
               <div className="space-y-3">
                 {CREDIT_PACKAGES.map((pkg) => (
                   <button
@@ -294,14 +289,7 @@ export function TopUpModal({
             </>
           )}
         </div>
-        <div className="flex flex-col-reverse md:flex-row gap-3 p-3">
-          <button
-            onClick={onClose}
-            disabled={isProcessing}
-            className="flex-1 rounded-xl border border-zinc-200 bg-white py-3 text-sm font-semibold text-zinc-900 transition-all hover:bg-zinc-50 active:scale-[0.98] disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
-          >
-            Cancel
-          </button>
+        <div className="flex flex-col-reverse md:flex-row gap-3 p-6">
           <button
             onClick={handlePay}
             disabled={isProcessing}
