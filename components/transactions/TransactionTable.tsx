@@ -8,11 +8,12 @@ import { useAccount } from "wagmi";
 interface Transaction {
   id: string;
   created_at: string;
-  chain_id: string;
-  currency: string;
-  amount_eth: number;
+  chain: string;
+  token_symbol: string;
+  amount: number;
   tx_hash: string;
-  status: "confirmed" | "pending" | "failed";
+  status: "success" | "pending" | "failed";
+  description?: string;
 }
 
 export function TransactionTable() {
@@ -57,15 +58,16 @@ export function TransactionTable() {
 
       const userId = profileData.id;
 
-      // 2. Fetch transactions using the retrieved user_id
+      // 2. Fetch IDRX transactions using the retrieved user_id
       let dbQuery = supabase
-        .from("post_transactions")
+        .from("transactions")
         .select("*")
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        .eq("token_symbol", "IDRX");
 
       // Apply Status Filter
       if (filter === "Completed") {
-        dbQuery = dbQuery.eq("status", "confirmed");
+        dbQuery = dbQuery.eq("status", "success");
       } else if (filter === "Pending") {
         dbQuery = dbQuery.eq("status", "pending");
       }
@@ -99,11 +101,10 @@ export function TransactionTable() {
             <button
               key={tab}
               onClick={() => setFilter(tab)}
-              className={`flex-1 border-b-2 pb-2 text-center text-sm font-medium transition-colors sm:flex-none sm:text-left ${
-                filter === tab
+              className={`flex-1 border-b-2 pb-2 text-center text-sm font-medium transition-colors sm:flex-none sm:text-left ${filter === tab
                   ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
                   : "border-transparent text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
-              }`}
+                }`}
             >
               {tab === "All" ? "All" : tab}
             </button>
@@ -203,7 +204,7 @@ export function TransactionTable() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <span className="capitalize text-zinc-900 dark:text-zinc-100">
-                          {tx.chain_id || "Unknown"}
+                          {tx.chain || "Unknown"}
                         </span>
                       </div>
                     </td>
@@ -213,12 +214,12 @@ export function TransactionTable() {
                           $
                         </div>
                         <span className="text-zinc-900 dark:text-zinc-100">
-                          {tx.currency}
+                          {tx.token_symbol}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
-                      {tx.amount_eth}
+                      {tx.amount.toFixed(2)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
@@ -246,13 +247,12 @@ export function TransactionTable() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
-                          tx.status === "confirmed"
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${tx.status === "success"
                             ? "bg-green-50 text-green-700 dark:bg-green-400/10 dark:text-green-400"
                             : tx.status === "pending"
                               ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-400/10 dark:text-yellow-400"
                               : "bg-red-50 text-red-700 dark:bg-red-400/10 dark:text-red-400"
-                        }`}
+                          }`}
                       >
                         {tx.status}
                       </span>

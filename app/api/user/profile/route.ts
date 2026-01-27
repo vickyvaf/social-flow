@@ -37,25 +37,20 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json({
         name: "Guest",
-        credits: 0,
         address: address || null,
       });
     }
 
-    // 3. Fetch profile and credits
-    const [profileRes, creditsRes] = await Promise.all([
-      supabase.from("profiles").select("email").eq("id", userId).single(),
-      supabase
-        .from("user_credits")
-        .select("credits_remaining")
-        .eq("user_id", userId)
-        .maybeSingle(),
-    ]);
+    // 3. Fetch profile
+    const profileRes = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", userId)
+      .single();
 
     return NextResponse.json({
       name:
         email || address?.slice(0, 6) + "..." + address?.slice(-4) || "User",
-      credits: creditsRes.data?.credits_remaining || 0,
       address: address || null,
     });
   } catch (error: any) {

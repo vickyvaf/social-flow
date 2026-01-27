@@ -1,66 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAccount, useDisconnect, useConnect } from "wagmi";
 import { supabase } from "@/supabase/client";
-import { User } from "@supabase/supabase-js";
-import { TopUpModal } from "./TopUpModal";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
+import { useIDRXBalance } from "@/hooks/useIDRX";
+import { FaucetModal } from "@/components/FaucetModal";
 
 export function UserAuthProfile() {
   const { disconnect } = useDisconnect();
   const { connect, connectors } = useConnect();
 
-  const { user, loading, error } = useWalletAuth();
-  const address = user?.id; // This is actually userId, but profileData logic below uses user.id which is correct.
-  // Wait, the original code used `address` from useAccount for display or logic?
-  // Line 10: const { address, isConnected } = useAccount();
-  // We still need wagmi hooks for connect/disconnect UI.
-
+  const { user, loading } = useWalletAuth();
   const { address: walletAddress, isConnected } = useAccount();
-
-  const [profileData, setProfileData] = useState<{
-    credits: number;
-  } | null>(null);
-
-  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
-
-  // We rely on useWalletAuth for user creation/fetching.
-  // We just need to fetch credits when user is available.
-
-  // Fetch credits when user is set
-  useEffect(() => {
-    async function fetchCredits() {
-      if (!user) return;
-      try {
-        const { data: creditsData, error } = await supabase
-          .from("user_credits")
-          .select("credits_remaining")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (error) {
-          console.warn("No credits found for user", error);
-        }
-
-        setProfileData({
-          credits: creditsData?.credits_remaining || 0,
-        });
-      } catch (err) {
-        console.error("Failed to fetch credits:", err);
-      }
-    }
-
-    fetchCredits();
-
-    const handleCreditsUpdate = () => {
-      fetchCredits();
-    };
-
-    window.addEventListener("creditsUpdated", handleCreditsUpdate);
-    return () =>
-      window.removeEventListener("creditsUpdated", handleCreditsUpdate);
-  }, [user]);
+  const { balanceFormatted } = useIDRXBalance();
+  const [isFaucetModalOpen, setIsFaucetModalOpen] = useState(false);
 
   const handleLogout = async () => {
     if (isConnected) {
@@ -103,19 +57,30 @@ export function UserAuthProfile() {
 
   return (
     <div className="flex items-center gap-2">
-      {/* Wallet Address Display */}
-
-      {/* Top Up Button */}
+      {/* IDRX Balance Display with Faucet Button */}
       <div className="flex items-center rounded-full border border-zinc-200 bg-white p-1 pr-1 dark:border-zinc-800 dark:bg-zinc-900">
-        <span className="px-3 text-xs font-medium text-zinc-600 dark:text-zinc-400">
-          {profileData?.credits ?? 0} Credits
+        <span className="px-3 text-sm font-medium text-zinc-900 dark:text-white">
+          {balanceFormatted} IDRX
         </span>
         <button
-          onClick={() => setIsTopUpModalOpen(true)}
-          className="flex h-7 items-center gap-1 rounded-full bg-blue-600 px-3 text-[10px] font-bold text-white transition-transform active:scale-95 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          onClick={() => setIsFaucetModalOpen(true)}
+          className="flex h-8 items-center gap-1.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 px-3 text-xs font-bold text-white transition-all hover:from-blue-700 hover:to-blue-800 active:scale-95"
+          title="Claim free IDRX"
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-          TOP UP
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-3.5 w-3.5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z"
+              clipRule="evenodd"
+            />
+          </svg>
+          FAUCET
         </button>
       </div>
 
@@ -141,14 +106,9 @@ export function UserAuthProfile() {
         </svg>
       </button>
 
-      <TopUpModal
-        isOpen={isTopUpModalOpen}
-        onClose={() => setIsTopUpModalOpen(false)}
-        userId={user?.id}
-        onSuccess={() => {
-          const event = new CustomEvent("creditsUpdated");
-          window.dispatchEvent(event);
-        }}
+      <FaucetModal
+        isOpen={isFaucetModalOpen}
+        onClose={() => setIsFaucetModalOpen(false)}
       />
     </div>
   );

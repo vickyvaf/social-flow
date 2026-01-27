@@ -1,21 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount, useBalance } from "wagmi";
-import { formatEther } from "viem";
+import { useAccount } from "wagmi";
 import { supabase } from "@/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIDRXBalance } from "@/hooks/useIDRX";
 
 export function StatsCards() {
   const { address } = useAccount();
+  const { balanceFormatted, isLoading: isBalanceLoading } = useIDRXBalance();
   const [stats, setStats] = useState({
     totalSpent: 0,
     totalTransactions: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
-
-  // Note: For "Current Balance", we usually need to read from the chain.
-  // For "Total Spent", we can aggregate from transactions table.
 
   useEffect(() => {
     async function fetchStats() {
@@ -43,18 +41,19 @@ export function StatsCards() {
 
         const userId = profileData.id;
 
-        // Fetch transactions for stats directly filtered by user
+        // Fetch IDRX transactions for stats
         const { data: transactions, error } = await supabase
-          .from("post_transactions")
-          .select("amount_eth, status, created_at")
-          .eq("user_id", userId);
+          .from("transactions")
+          .select("amount, status, created_at, token_symbol")
+          .eq("user_id", userId)
+          .eq("token_symbol", "IDRX");
 
         if (error) throw error;
 
         if (transactions) {
           const totalSpent = transactions
-            .filter((t) => t.status === "confirmed")
-            .reduce((acc, curr) => acc + Number(curr.amount_eth), 0);
+            .filter((t) => t.status === "success")
+            .reduce((acc, curr) => acc + Number(curr.amount), 0);
 
           // Count recent (last 30 days)
           const thirtyDaysAgo = new Date();
@@ -79,13 +78,8 @@ export function StatsCards() {
     fetchStats();
   }, [address]);
 
-  // Hook for balance
-  const { data: balanceData, isLoading: isBalanceLoading } = useBalance({
-    address: address,
-  });
-
   return (
-    <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-4">
+    <div className="grid grid-cols-2 gap-2 md:grid-cols-1 md:gap-4">
       {/* Current Balance Card */}
       <div className="col-span-2 rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-black md:col-span-1">
         <div className="mb-2 flex items-start justify-between sm:mb-4">
@@ -111,16 +105,12 @@ export function StatsCards() {
           {isBalanceLoading || isLoading ? (
             <Skeleton className="h-6 w-24 sm:h-9 sm:w-32" />
           ) : (
-            `${
-              balanceData
-                ? Number(formatEther(balanceData.value)).toFixed(4)
-                : "0.0000"
-            } ${balanceData?.symbol || "ETH"}`
+            `${Number(balanceFormatted).toFixed(2)} IDRX`
           )}
         </div>
         <div className="flex items-center gap-1 text-xs">
           <span className="truncate text-zinc-500 dark:text-zinc-400">
-            Base
+            Base Sepolia
           </span>
         </div>
       </div>
@@ -148,9 +138,9 @@ export function StatsCards() {
         </div>
         <div className="mb-1 truncate text-lg font-bold text-zinc-900 sm:text-3xl dark:text-white">
           {isLoading ? (
-            <Skeleton className="h-6 w-24 sm:h-9 sm:w-32" />
+            <Skeleton className="h-6 w-16 sm:h-9 sm:w-20" />
           ) : (
-            `${stats.totalSpent.toFixed(6)} ETH`
+            `${stats.totalSpent.toFixed(2)} IDRX`
           )}
         </div>
         <div className="flex items-center gap-1 text-xs">

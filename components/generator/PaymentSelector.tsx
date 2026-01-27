@@ -5,7 +5,7 @@ interface PaymentSelectorProps {
 
 export function PaymentSelector({ selected, onSelect }: PaymentSelectorProps) {
   const tokens = [
-    { id: "IDRX", label: "IDRX", icon: "$" },
+    { id: "IDRX", label: "IDRX", icon: "Rp" },
     { id: "eth", label: "ETH", icon: "Ξ" },
     { id: "sol", label: "SOL", icon: "◎" },
   ];
