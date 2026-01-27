@@ -74,7 +74,7 @@ export function PromptInput({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <button
+        {/* <button
           onClick={handleGenerate}
           disabled={isGenerating || !value.trim()}
           className="flex items-center gap-1.5 rounded-lg bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-200 disabled:opacity-50 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50"
@@ -116,7 +116,7 @@ export function PromptInput({
               Enhance with AI
             </>
           )}
-        </button>
+        </button> */}
 
         {hasContent && onNext && (
           <button

@@ -372,7 +372,7 @@ function GeneratorContent() {
         <div className="container mx-auto max-w-7xl">
           <div className="mx-auto w-full max-w-3xl">
             {!showPreview && (
-              <div className="h-[calc(100vh-160px)] flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
+              <div className="h-[calc(100vh-160px)] overflow-y-auto flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
                 <PromptInput
                   value={prompt}
                   onChange={setPrompt}
