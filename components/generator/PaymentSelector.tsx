@@ -25,11 +25,10 @@ export function PaymentSelector({ selected, onSelect }: PaymentSelectorProps) {
           <button
             key={token.id}
             onClick={() => onSelect(token.id)}
-            className={`flex items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-medium transition-all ${
-              selected === token.id
+            className={`flex items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-medium transition-all ${selected === token.id
                 ? "border-blue-500 bg-white text-blue-600 shadow-sm dark:bg-black"
                 : "border-zinc-200 bg-transparent text-zinc-600 hover:bg-white hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
-            }`}
+              }`}
           >
             <span
               className={

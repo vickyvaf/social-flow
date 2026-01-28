@@ -6,6 +6,8 @@ import { PromptInput } from "@/components/generator/PromptInput";
 import { Header } from "@/components/layout/Header";
 import { Toast } from "@/components/ui/Toast";
 import { PaymentModal } from "@/components/PaymentModal";
+import { OnboardingModal } from "@/components/OnboardingModal";
+import { UserPreferencesModal } from "@/components/UserPreferencesModal";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { useCanAffordGeneration } from "@/hooks/useIDRX";
 import { sdk } from "@farcaster/miniapp-sdk";
@@ -37,6 +39,13 @@ function GeneratorContent() {
   const [showPreview, setShowPreview] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  // User Preferences & Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<any>(null);
+  const [hasCheckedPreferences, setHasCheckedPreferences] = useState(false);
+
   const [toast, setToast] = useState<{
     show: boolean;
     message: string;
@@ -128,6 +137,54 @@ function GeneratorContent() {
     }
   }, [walletUser, authLoading]);
 
+  const isConnected = !!user || !!address;
+
+  // Check user preferences on mount/login
+  useEffect(() => {
+    const checkUserPreferences = async () => {
+      if (!isConnected || hasCheckedPreferences) return;
+
+      try {
+        const response = await fetch(`/api/user/config?address=${address || ""}`);
+        const data = await response.json();
+
+        if (data.preferences) {
+          setUserPreferences(data.preferences);
+        }
+
+        // Show onboarding if user hasn't completed it
+        if (!data.hasCompletedOnboarding) {
+          setShowOnboarding(true);
+        }
+
+        setHasCheckedPreferences(true);
+      } catch (error) {
+        console.error("Error checking user preferences:", error);
+      }
+    };
+
+    checkUserPreferences();
+  }, [isConnected, address, hasCheckedPreferences]);
+
+  const handleOnboardingComplete = (preferences: any) => {
+    setUserPreferences(preferences);
+    setShowOnboarding(false);
+    setToast({
+      show: true,
+      message: "Welcome! Your preferences have been saved. 🎉",
+      type: "success",
+    });
+  };
+
+  const handlePreferencesSave = (preferences: any) => {
+    setUserPreferences(preferences);
+    setToast({
+      show: true,
+      message: "Preferences updated successfully! ✨",
+      type: "success",
+    });
+  };
+
   /* 
   // Commenting out conflicting direct Supabase usage to avoid double-fetching or conflicts
   // We will rely on useWalletAuth which internally does the profile lookup
@@ -162,8 +219,6 @@ function GeneratorContent() {
   }, []);
   */
 
-  const isConnected = !!user || !!address;
-
   const handleGenerate = async () => {
     if (!isConnected) {
       setToast({
@@ -176,24 +231,71 @@ function GeneratorContent() {
 
     if (!prompt) return;
 
-    // Check if user can afford and has approval
-    if (!canAfford) {
+    // // Check if user can afford and has approval
+    // if (!canAfford) {
+    //   setToast({
+    //     show: true,
+    //     message: "Insufficient IDRX balance. Please top up your wallet.",
+    //     type: "error",
+    //   });
+    //   return;
+    // }
+
+    // if (needsApproval) {
+    //   // Show payment modal for approval + payment
+    //   setIsPaymentModalOpen(true);
+    //   return;
+    // }
+
+    // // If already approved, show payment modal for transfer
+    // setIsPaymentModalOpen(true);
+
+    setIsLoading(true);
+    setIsEditing(false);
+    setShowPreview(true);
+
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          platform: selectedPlatform,
+          systemInstruction: systemInstructions[selectedPlatform],
+          userId: user?.id,
+          address: address,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.result) {
+        setGeneratedContent(data.result);
+      } else {
+        console.error("Failed to generate content");
+        setToast({
+          show: true,
+          message:
+            data.message || "Failed to generate content. Please try again.",
+          type: "error",
+        });
+        setShowPreview(false);
+      }
+    } catch (error: unknown) {
+      console.error("Error generating content:", error);
       setToast({
         show: true,
-        message: "Insufficient IDRX balance. Please top up your wallet.",
+        message: "Error generating content. Please try again.",
         type: "error",
       });
-      return;
+      setShowPreview(false);
+    } finally {
+      setIsLoading(false);
     }
 
-    if (needsApproval) {
-      // Show payment modal for approval + payment
-      setIsPaymentModalOpen(true);
-      return;
-    }
 
-    // If already approved, show payment modal for transfer
-    setIsPaymentModalOpen(true);
   };
 
   const handlePaymentSuccess = async () => {
@@ -213,6 +315,7 @@ function GeneratorContent() {
           platform: selectedPlatform,
           systemInstruction: systemInstructions[selectedPlatform],
           userId: user?.id,
+          address: address,
         }),
       });
 
@@ -367,7 +470,7 @@ function GeneratorContent() {
 
   return (
     <div className="flex flex-col bg-zinc-50 dark:bg-black">
-      <Header />
+      <Header onSettingsClick={() => setShowPreferencesModal(true)} />
 
       <main className="flex-1 p-4 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-7xl">
@@ -461,6 +564,20 @@ function GeneratorContent() {
         userId={user?.id}
         onSuccess={handlePaymentSuccess}
         description="Generate Social Media Content"
+      />
+
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onComplete={handleOnboardingComplete}
+        address={address}
+      />
+
+      <UserPreferencesModal
+        isOpen={showPreferencesModal}
+        onClose={() => setShowPreferencesModal(false)}
+        address={address}
+        currentPreferences={userPreferences}
+        onSave={handlePreferencesSave}
       />
 
       <Toast
