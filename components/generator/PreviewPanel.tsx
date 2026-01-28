@@ -2,16 +2,19 @@ import { Toast } from "@/components/ui/Toast";
 import { supabase } from "@/supabase/client";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { useAccount, useSendTransaction } from "wagmi";
-import { parseEther } from "viem";
+import { PaymentModal } from "../PaymentModal";
+import { User } from "@supabase/supabase-js";
+import { useCanAffordGeneration } from "@/hooks/useIDRX";
 
 interface PreviewPanelProps {
+  user: User | null;
   content?: string;
   isLocked?: boolean;
   isConnected?: boolean;
   prompt?: string;
   platform?: string;
   address?: string;
+  userId?: string;
   isLoading?: boolean;
   isPlatformConnected?: boolean;
   connectedPlatforms?: string[];
@@ -23,6 +26,7 @@ interface PreviewPanelProps {
 }
 
 export function PreviewPanel({
+  user,
   content,
   isLocked = true,
   isConnected = false,
@@ -37,6 +41,7 @@ export function PreviewPanel({
   onContentChange,
   onBack,
   address,
+  userId,
 }: PreviewPanelProps) {
   const [isWindowFocused, setIsWindowFocused] = useState(true);
   const [postingType, setPostingType] = useState<
@@ -46,11 +51,6 @@ export function PreviewPanel({
     string[]
   >([]);
   const isPosting = postingType !== null;
-
-  // Payment State
-  const [isPaid, setIsPaid] = useState(false);
-  const { sendTransactionAsync } = useSendTransaction();
-  const { address: userAddress } = useAccount();
 
   const [toast, setToast] = useState<{
     show: boolean;
@@ -62,15 +62,13 @@ export function PreviewPanel({
     type: "success",
   });
 
-  // Reset states when content changes
-  useEffect(() => {
-    setIsPaid(false); // New content requires new payment
-  }, [content]);
-
   const [selectedOption, setSelectedOption] = useState(0);
   const [parsedOptions, setParsedOptions] = useState<string[]>([]);
   const [isScheduling, setIsScheduling] = useState(false);
   const [scheduleTime, setScheduleTime] = useState("");
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  const { canAfford } = useCanAffordGeneration();
 
   useEffect(() => {
     if (!content) {
@@ -154,6 +152,38 @@ export function PreviewPanel({
       return;
     }
 
+    // Check if user can afford and has approval - PAYMENT REQUIRED FOR POSTING
+    if (!canAfford) {
+      setToast({
+        show: true,
+        message: "Insufficient IDRX balance. Please top up your wallet to post.",
+        type: "error",
+      });
+      return;
+    }
+
+    // Show payment modal - user needs to pay before posting
+    setIsPaymentModalOpen(true);
+    return;
+  };
+
+  const handlePaymentSuccess = async () => {
+    // After payment successful, proceed with posting
+    setIsPaymentModalOpen(false);
+    await executePost();
+  };
+
+  const executePost = async (scheduledForDate?: string) => {
+    const isCustomPosting = customSelectedPlatforms.length > 0;
+    const contentToPost =
+      parsedOptions.length > 0 && parsedOptions[selectedOption]
+        ? parsedOptions[selectedOption]
+        : content;
+
+    const targetPlatforms = isCustomPosting
+      ? customSelectedPlatforms
+      : [platform!];
+
     // 1. Execute Post (API)
     setPostingType(scheduledForDate ? "scheduled" : "immediate");
     try {
@@ -215,63 +245,6 @@ export function PreviewPanel({
     }
   };
 
-  const handlePayment = async () => {
-    setPostingType("immediate");
-
-    try {
-      const txHash = await sendTransactionAsync({
-        to: (process.env.NEXT_PUBLIC_SERVER_WALLET_ADDRESS ||
-          "0x0000000000000000000000000000000000000000") as `0x${string}`,
-        value: parseEther("0.0001"), // Approx 0.30 USD
-      });
-
-      setIsPaid(true);
-      setPostingType(null);
-
-      // Record transaction
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (user && userAddress) {
-          await supabase.from("transactions").insert({
-            user_id: user.id,
-            wallet_address: userAddress,
-            chain: "base",
-            tx_hash: txHash,
-            token_symbol: "ETH",
-            token_decimals: 18,
-            amount: 0.0001,
-            credits_granted: 0, // Transaction used for posting, not buying credits directly here
-          });
-
-          // Also update/select wallet to ensure it's marked as verified/active
-          await supabase
-            .from("wallets")
-            .update({ verified: true })
-            .eq("user_id", user.id)
-            .eq("address", userAddress);
-        }
-      } catch (txErr) {
-        console.error("Failed to record transaction:", txErr);
-      }
-
-      setToast({
-        show: true,
-        message: "Payment successful! Thank you.",
-        type: "success",
-      });
-    } catch (error: unknown) {
-      console.error("Payment failed", error);
-      setPostingType(null);
-      setToast({
-        show: true,
-        message: "Payment failed. Please try again.",
-        type: "error",
-      });
-    }
-  };
-
   useEffect(() => {
     // Disabled for now as per previous logic, or kept minimal
     const handleFocus = () => setIsWindowFocused(true);
@@ -321,11 +294,10 @@ export function PreviewPanel({
           {isConnected && !isLocked && setIsEditing && (
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className={`p-1.5 rounded-md transition-colors ${
-                isEditing
-                  ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-                  : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-              }`}
+              className={`p-1.5 rounded-md transition-colors ${isEditing
+                ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                }`}
               title={isEditing ? "View Preview" : "Edit Content"}
             >
               <svg
@@ -413,9 +385,8 @@ export function PreviewPanel({
           />
         ) : (
           <div
-            className={`h-full w-full overflow-y-auto text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 select-none transition-all duration-300 ${
-              !isWindowFocused ? "blur-sm opacity-50" : ""
-            }`}
+            className={`h-full w-full overflow-y-auto text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 select-none transition-all duration-300 ${!isWindowFocused ? "blur-sm opacity-50" : ""
+              }`}
             onContextMenu={(e) => e.preventDefault()}
           >
             <ReactMarkdown
@@ -671,11 +642,10 @@ export function PreviewPanel({
 
                 <div className="space-y-2">
                   <div
-                    className={`flex items-center justify-between rounded-lg border p-3 transition-colors cursor-pointer ${
-                      customSelectedPlatforms.length === 0
-                        ? "border-blue-500 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20"
-                        : "border-zinc-100 dark:border-zinc-800"
-                    }`}
+                    className={`flex items-center justify-between rounded-lg border p-3 transition-colors cursor-pointer ${customSelectedPlatforms.length === 0
+                      ? "border-blue-500 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20"
+                      : "border-zinc-100 dark:border-zinc-800"
+                      }`}
                     onClick={() => setCustomSelectedPlatforms([])}
                   >
                     <div className="flex flex-col">
@@ -698,11 +668,10 @@ export function PreviewPanel({
                     {connectedPlatforms.map((p) => (
                       <div
                         key={p}
-                        className={`flex items-center justify-between rounded-lg border p-3 transition-colors cursor-pointer ${
-                          customSelectedPlatforms.includes(p)
-                            ? "border-blue-500 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20"
-                            : "border-zinc-100 dark:border-zinc-800"
-                        }`}
+                        className={`flex items-center justify-between rounded-lg border p-3 transition-colors cursor-pointer ${customSelectedPlatforms.includes(p)
+                          ? "border-blue-500 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20"
+                          : "border-zinc-100 dark:border-zinc-800"
+                          }`}
                         onClick={() => {
                           if (customSelectedPlatforms.includes(p)) {
                             setCustomSelectedPlatforms(
@@ -742,6 +711,14 @@ export function PreviewPanel({
         type={toast.type}
         isVisible={toast.show}
         onClose={() => setToast((prev) => ({ ...prev, show: false }))}
+      />
+
+      <PaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        userId={userId || user?.id}
+        onSuccess={handlePaymentSuccess}
+        description="Post Social Media Content"
       />
     </div>
   );

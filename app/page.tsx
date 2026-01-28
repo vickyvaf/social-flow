@@ -5,11 +5,9 @@ import { PreviewPanel } from "@/components/generator/PreviewPanel";
 import { PromptInput } from "@/components/generator/PromptInput";
 import { Header } from "@/components/layout/Header";
 import { Toast } from "@/components/ui/Toast";
-import { PaymentModal } from "@/components/PaymentModal";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { UserPreferencesModal } from "@/components/UserPreferencesModal";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
-import { useCanAffordGeneration } from "@/hooks/useIDRX";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { User } from "@supabase/supabase-js";
 import Image from "next/image";
@@ -38,7 +36,6 @@ function GeneratorContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   // User Preferences & Onboarding
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -127,7 +124,6 @@ function GeneratorContent() {
 
   // Use our custom hook for auth
   const { user: walletUser, loading: authLoading } = useWalletAuth();
-  const { canAfford, needsApproval } = useCanAffordGeneration();
 
   useEffect(() => {
     if (walletUser) {
@@ -231,25 +227,7 @@ function GeneratorContent() {
 
     if (!prompt) return;
 
-    // // Check if user can afford and has approval
-    // if (!canAfford) {
-    //   setToast({
-    //     show: true,
-    //     message: "Insufficient IDRX balance. Please top up your wallet.",
-    //     type: "error",
-    //   });
-    //   return;
-    // }
-
-    // if (needsApproval) {
-    //   // Show payment modal for approval + payment
-    //   setIsPaymentModalOpen(true);
-    //   return;
-    // }
-
-    // // If already approved, show payment modal for transfer
-    // setIsPaymentModalOpen(true);
-
+    // Generate is FREE - payment only required when posting
     setIsLoading(true);
     setIsEditing(false);
     setShowPreview(true);
@@ -298,53 +276,7 @@ function GeneratorContent() {
 
   };
 
-  const handlePaymentSuccess = async () => {
-    // After payment successful, proceed with generation
-    setIsLoading(true);
-    setIsEditing(false);
-    setShowPreview(true);
 
-    try {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt,
-          platform: selectedPlatform,
-          systemInstruction: systemInstructions[selectedPlatform],
-          userId: user?.id,
-          address: address,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.result) {
-        setGeneratedContent(data.result);
-      } else {
-        console.error("Failed to generate content");
-        setToast({
-          show: true,
-          message:
-            data.message || "Failed to generate content. Please try again.",
-          type: "error",
-        });
-        setShowPreview(false);
-      }
-    } catch (error: unknown) {
-      console.error("Error generating content:", error);
-      setToast({
-        show: true,
-        message: "Error generating content. Please try again.",
-        type: "error",
-      });
-      setShowPreview(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const [connectedPlatforms, setConnectedPlatforms] = useState<string[]>([]);
   const [connectedUsernames, setConnectedUsernames] = useState<
@@ -527,12 +459,14 @@ function GeneratorContent() {
             {showPreview && (
               <div className="flex flex-col gap-4">
                 <PreviewPanel
+                  user={user}
                   isLocked={!isConnected}
                   isConnected={isConnected}
                   content={generatedContent}
                   prompt={prompt}
                   platform={selectedPlatform}
-                  address={user?.id}
+                  address={address}
+                  userId={user?.id}
                   isLoading={isLoading}
                   // @ts-ignore
                   isPlatformConnected={connectedPlatforms.includes(
@@ -557,14 +491,6 @@ function GeneratorContent() {
           </div>
         </div>
       </main>
-
-      <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        userId={user?.id}
-        onSuccess={handlePaymentSuccess}
-        description="Generate Social Media Content"
-      />
 
       <OnboardingModal
         isOpen={showOnboarding}
