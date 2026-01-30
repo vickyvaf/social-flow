@@ -1,7 +1,7 @@
 -- User Preferences Table
 CREATE TABLE IF NOT EXISTS user_preferences (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   
   -- User Profile & Brand Identity
   brand_name TEXT,
@@ -41,32 +41,32 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 CREATE INDEX idx_user_preferences_user_id ON user_preferences(user_id);
 
 -- RLS Policies
-ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+-- ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 
 -- Users can only view their own preferences
-CREATE POLICY "Users can view own preferences"
-  ON user_preferences
-  FOR SELECT
-  USING (auth.uid() = user_id);
+-- CREATE POLICY "Users can view own preferences"
+--   ON user_preferences
+--   FOR SELECT
+--   USING (auth.uid() = user_id);
 
 -- Users can insert their own preferences
-CREATE POLICY "Users can insert own preferences"
-  ON user_preferences
-  FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+-- CREATE POLICY "Users can insert own preferences"
+--   ON user_preferences
+--   FOR INSERT
+--   WITH CHECK (auth.uid() = user_id);
 
 -- Users can update their own preferences
-CREATE POLICY "Users can update own preferences"
-  ON user_preferences
-  FOR UPDATE
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
+-- CREATE POLICY "Users can update own preferences"
+--   ON user_preferences
+--   FOR UPDATE
+--   USING (auth.uid() = user_id)
+--   WITH CHECK (auth.uid() = user_id);
 
 -- Users can delete their own preferences
-CREATE POLICY "Users can delete own preferences"
-  ON user_preferences
-  FOR DELETE
-  USING (auth.uid() = user_id);
+-- CREATE POLICY "Users can delete own preferences"
+--   ON user_preferences
+--   FOR DELETE
+--   USING (auth.uid() = user_id);
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_user_preferences_updated_at()
@@ -82,3 +82,12 @@ CREATE TRIGGER update_user_preferences_timestamp
   BEFORE UPDATE ON user_preferences
   FOR EACH ROW
   EXECUTE FUNCTION update_user_preferences_updated_at();
+
+-- Fix user_preferences foreign key to reference profiles instead of auth.users
+ALTER TABLE user_preferences DROP CONSTRAINT IF EXISTS user_preferences_user_id_fkey;
+
+ALTER TABLE user_preferences
+  ADD CONSTRAINT user_preferences_user_id_fkey
+  FOREIGN KEY (user_id)
+  REFERENCES public.profiles(id)
+  ON DELETE CASCADE;

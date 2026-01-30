@@ -76,7 +76,7 @@ export function UserPreferencesModal({
   const handleAddItem = (
     type: "preferred_hashtags" | "keywords" | "avoid_topics",
     value: string,
-    setter: (value: string) => void
+    setter: (value: string) => void,
   ) => {
     if (value.trim()) {
       setFormData({
@@ -89,7 +89,7 @@ export function UserPreferencesModal({
 
   const handleRemoveItem = (
     type: "preferred_hashtags" | "keywords" | "avoid_topics",
-    index: number
+    index: number,
   ) => {
     setFormData({
       ...formData,
@@ -151,7 +151,7 @@ export function UserPreferencesModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="relative w-full max-w-3xl max-h-[90vh] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
@@ -174,7 +174,7 @@ export function UserPreferencesModal({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-zinc-200 dark:border-zinc-800">
+        <div className="items-center overflow-x-auto flex border-b border-zinc-200 dark:border-zinc-800">
           {[
             { id: "profile", label: "Profile", icon: "👤" },
             { id: "voice", label: "Voice & Tone", icon: "🎤" },
@@ -184,10 +184,11 @@ export function UserPreferencesModal({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${activeTab === tab.id
-                ? "border-b-2 border-blue-600 text-blue-600 dark:text-blue-400"
-                : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-                }`}
+              className={`text-nowrap flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+                activeTab === tab.id
+                  ? "border-b-2 border-blue-600 text-blue-600 dark:text-blue-400"
+                  : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              }`}
             >
               <span className="mr-1">{tab.icon}</span>
               {tab.label}
@@ -267,7 +268,7 @@ export function UserPreferencesModal({
                 <label className="mb-3 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Brand Voice
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="flex overflow-x-auto items-center gap-3">
                   {[
                     "Professional",
                     "Casual",
@@ -281,10 +282,11 @@ export function UserPreferencesModal({
                       onClick={() =>
                         setFormData({ ...formData, brand_voice: voice })
                       }
-                      className={`rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all ${formData.brand_voice === voice
-                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                        }`}
+                      className={`rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all ${
+                        formData.brand_voice === voice
+                          ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                      }`}
                     >
                       {voice}
                     </button>
@@ -296,7 +298,7 @@ export function UserPreferencesModal({
                 <label className="mb-3 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   Tone
                 </label>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="flex overflow-x-auto items-center gap-3">
                   {[
                     "Friendly",
                     "Authoritative",
@@ -308,10 +310,11 @@ export function UserPreferencesModal({
                     <button
                       key={tone}
                       onClick={() => setFormData({ ...formData, tone })}
-                      className={`rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all ${formData.tone === tone
-                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                        }`}
+                      className={`rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all ${
+                        formData.tone === tone
+                          ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                      }`}
                     >
                       {tone}
                     </button>
@@ -359,7 +362,7 @@ export function UserPreferencesModal({
                         handleAddItem(
                           "preferred_hashtags",
                           hashtagInput,
-                          setHashtagInput
+                          setHashtagInput,
                         );
                       }
                     }}
@@ -371,7 +374,7 @@ export function UserPreferencesModal({
                       handleAddItem(
                         "preferred_hashtags",
                         hashtagInput,
-                        setHashtagInput
+                        setHashtagInput,
                       )
                     }
                     className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
@@ -412,7 +415,11 @@ export function UserPreferencesModal({
                     onKeyPress={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
-                        handleAddItem("keywords", keywordInput, setKeywordInput);
+                        handleAddItem(
+                          "keywords",
+                          keywordInput,
+                          setKeywordInput,
+                        );
                       }
                     }}
                     placeholder="e.g., Innovation, AI"
@@ -461,7 +468,7 @@ export function UserPreferencesModal({
                         handleAddItem(
                           "avoid_topics",
                           avoidTopicInput,
-                          setAvoidTopicInput
+                          setAvoidTopicInput,
                         );
                       }
                     }}
@@ -473,7 +480,7 @@ export function UserPreferencesModal({
                       handleAddItem(
                         "avoid_topics",
                         avoidTopicInput,
-                        setAvoidTopicInput
+                        setAvoidTopicInput,
                       )
                     }
                     className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
@@ -543,10 +550,11 @@ export function UserPreferencesModal({
                       onClick={() =>
                         setFormData({ ...formData, post_length: length })
                       }
-                      className={`rounded-lg border-2 px-4 py-2.5 text-sm font-medium capitalize transition-all ${formData.post_length === length
-                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                        }`}
+                      className={`rounded-lg border-2 px-4 py-2.5 text-sm font-medium capitalize transition-all ${
+                        formData.post_length === length
+                          ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                      }`}
                     >
                       {length}
                     </button>
@@ -566,10 +574,11 @@ export function UserPreferencesModal({
                       onClick={() =>
                         setFormData({ ...formData, emoji_usage: usage })
                       }
-                      className={`rounded-lg border-2 px-3 py-2.5 text-xs font-medium capitalize transition-all ${formData.emoji_usage === usage
-                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                        }`}
+                      className={`rounded-lg border-2 px-3 py-2.5 text-xs font-medium capitalize transition-all ${
+                        formData.emoji_usage === usage
+                          ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                      }`}
                     >
                       {usage}
                     </button>
@@ -592,10 +601,11 @@ export function UserPreferencesModal({
                           call_to_action_preference: cta,
                         })
                       }
-                      className={`rounded-lg border-2 px-3 py-2.5 text-xs font-medium capitalize transition-all ${formData.call_to_action_preference === cta
-                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                        }`}
+                      className={`rounded-lg border-2 px-3 py-2.5 text-xs font-medium capitalize transition-all ${
+                        formData.call_to_action_preference === cta
+                          ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                      }`}
                     >
                       {cta}
                     </button>

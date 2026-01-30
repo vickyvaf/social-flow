@@ -51,7 +51,7 @@ export function OnboardingModal({
   const handleAddItem = (
     type: "preferred_hashtags" | "keywords" | "avoid_topics",
     value: string,
-    setter: (value: string) => void
+    setter: (value: string) => void,
   ) => {
     if (value.trim()) {
       setFormData({
@@ -64,7 +64,7 @@ export function OnboardingModal({
 
   const handleRemoveItem = (
     type: "preferred_hashtags" | "keywords" | "avoid_topics",
-    index: number
+    index: number,
   ) => {
     setFormData({
       ...formData,
@@ -124,7 +124,7 @@ export function OnboardingModal({
   const totalSteps = 4;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-8 shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
         {/* Progress Bar */}
         <div className="mb-6">
@@ -244,10 +244,11 @@ export function OnboardingModal({
                     onClick={() =>
                       setFormData({ ...formData, brand_voice: voice })
                     }
-                    className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${formData.brand_voice === voice
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                      }`}
+                    className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
+                      formData.brand_voice === voice
+                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                    }`}
                   >
                     {voice}
                   </button>
@@ -271,10 +272,11 @@ export function OnboardingModal({
                   <button
                     key={tone}
                     onClick={() => setFormData({ ...formData, tone })}
-                    className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${formData.tone === tone
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                      }`}
+                    className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
+                      formData.tone === tone
+                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                    }`}
                   >
                     {tone}
                   </button>
@@ -331,7 +333,7 @@ export function OnboardingModal({
                       handleAddItem(
                         "preferred_hashtags",
                         hashtagInput,
-                        setHashtagInput
+                        setHashtagInput,
                       );
                     }
                   }}
@@ -343,7 +345,7 @@ export function OnboardingModal({
                     handleAddItem(
                       "preferred_hashtags",
                       hashtagInput,
-                      setHashtagInput
+                      setHashtagInput,
                     )
                   }
                   className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
@@ -359,7 +361,9 @@ export function OnboardingModal({
                   >
                     {tag}
                     <button
-                      onClick={() => handleRemoveItem("preferred_hashtags", idx)}
+                      onClick={() =>
+                        handleRemoveItem("preferred_hashtags", idx)
+                      }
                       className="hover:text-blue-900 dark:hover:text-blue-100"
                     >
                       ×
@@ -431,7 +435,7 @@ export function OnboardingModal({
                       handleAddItem(
                         "avoid_topics",
                         avoidTopicInput,
-                        setAvoidTopicInput
+                        setAvoidTopicInput,
                       );
                     }
                   }}
@@ -443,7 +447,7 @@ export function OnboardingModal({
                     handleAddItem(
                       "avoid_topics",
                       avoidTopicInput,
-                      setAvoidTopicInput
+                      setAvoidTopicInput,
                     )
                   }
                   className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
@@ -487,7 +491,9 @@ export function OnboardingModal({
             <div>
               <label className="mb-2 flex items-center justify-between text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 <span>Creativity Level</span>
-                <span className="text-blue-600">{formData.creativity_level}/10</span>
+                <span className="text-blue-600">
+                  {formData.creativity_level}/10
+                </span>
               </label>
               <input
                 type="range"
@@ -520,10 +526,11 @@ export function OnboardingModal({
                     onClick={() =>
                       setFormData({ ...formData, post_length: length })
                     }
-                    className={`rounded-lg border-2 px-4 py-3 text-sm font-medium capitalize transition-all ${formData.post_length === length
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                      }`}
+                    className={`rounded-lg border-2 px-4 py-3 text-sm font-medium capitalize transition-all ${
+                      formData.post_length === length
+                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                    }`}
                   >
                     {length}
                   </button>
@@ -532,21 +539,22 @@ export function OnboardingModal({
             </div>
 
             {/* Emoji Usage */}
-            <div>
+            <div className="overflow-x-auto">
               <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Emoji Usage
               </label>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="flex items-center gap-3">
                 {["none", "minimal", "moderate", "heavy"].map((usage) => (
                   <button
                     key={usage}
                     onClick={() =>
                       setFormData({ ...formData, emoji_usage: usage })
                     }
-                    className={`rounded-lg border-2 px-4 py-3 text-sm font-medium capitalize transition-all ${formData.emoji_usage === usage
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                      }`}
+                    className={`text-nowrap rounded-lg border-2 px-4 py-3 text-sm font-medium capitalize transition-all ${
+                      formData.emoji_usage === usage
+                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                    }`}
                   >
                     {usage}
                   </button>
@@ -555,11 +563,11 @@ export function OnboardingModal({
             </div>
 
             {/* Call to Action */}
-            <div>
+            <div className="overflow-x-auto">
               <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 Call-to-Action Strength
               </label>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="flex items-center gap-3">
                 {["none", "subtle", "moderate", "strong"].map((cta) => (
                   <button
                     key={cta}
@@ -569,10 +577,11 @@ export function OnboardingModal({
                         call_to_action_preference: cta,
                       })
                     }
-                    className={`rounded-lg border-2 px-4 py-3 text-sm font-medium capitalize transition-all ${formData.call_to_action_preference === cta
-                      ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
-                      : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
-                      }`}
+                    className={`text-nowrap rounded-lg border-2 px-4 py-3 text-sm font-medium capitalize transition-all ${
+                      formData.call_to_action_preference === cta
+                        ? "border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300"
+                        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                    }`}
                   >
                     {cta}
                   </button>
