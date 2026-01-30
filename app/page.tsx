@@ -5,6 +5,8 @@ import { PreviewPanel } from "@/components/generator/PreviewPanel";
 import { PromptInput } from "@/components/generator/PromptInput";
 import { Header } from "@/components/layout/Header";
 import { Toast } from "@/components/ui/Toast";
+import { OnboardingModal } from "@/components/OnboardingModal";
+import { UserPreferencesModal } from "@/components/UserPreferencesModal";
 import { useWalletAuth } from "@/hooks/useWalletAuth";
 import { sdk } from "@farcaster/miniapp-sdk";
 import { User } from "@supabase/supabase-js";
@@ -34,6 +36,13 @@ function GeneratorContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // User Preferences & Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<any>(null);
+  const [hasCheckedPreferences, setHasCheckedPreferences] = useState(false);
+
   const [toast, setToast] = useState<{
     show: boolean;
     message: string;
@@ -112,38 +121,67 @@ function GeneratorContent() {
   };
 
   const [user, setUser] = useState<User | null>(null);
-  const [credits, setCredits] = useState<number | null>(null);
-
-  const fetchCredits = async (userId: string) => {
-    try {
-      const res = await fetch(`/api/user/profile?userId=${userId}`);
-      const data = await res.json();
-      if (data.credits !== undefined) {
-        setCredits(data.credits);
-      }
-    } catch (err) {
-      console.error("Failed to fetch credits:", err);
-    }
-  };
 
   // Use our custom hook for auth
   const { user: walletUser, loading: authLoading } = useWalletAuth();
 
-  // Also keep Supabase auth for non-wallet (if any) or hybrid, but prioritizing walletUser for now as per requirement
-  // actually, let's just use walletUser if available, or fallback to the supabase user state we manage?
-  // The existing code manages `user` state. Let's sync it.
-
   useEffect(() => {
     if (walletUser) {
       setUser(walletUser);
-      fetchCredits(walletUser.id);
     } else if (!authLoading && !walletUser) {
-      // Only clear if auth finished loading and no user found
-      // But wait, existing logic also checked Supabase session.
-      // Let's keep existing Supabase check but ALSO check walletUser.
-      // Actually best to just let walletUser take precedence for this use case.
+      setUser(null);
     }
   }, [walletUser, authLoading]);
+
+  const isConnected = !!user || !!address;
+
+  // Check user preferences on mount/login
+  useEffect(() => {
+    const checkUserPreferences = async () => {
+      if (!isConnected || hasCheckedPreferences) return;
+
+      try {
+        const response = await fetch(
+          `/api/user/config?address=${address || ""}`,
+        );
+        const data = await response.json();
+
+        if (data.preferences) {
+          setUserPreferences(data.preferences);
+        }
+
+        // Show onboarding if user hasn't completed it
+        if (!data.hasCompletedOnboarding) {
+          setShowOnboarding(true);
+        }
+
+        setHasCheckedPreferences(true);
+      } catch (error) {
+        console.error("Error checking user preferences:", error);
+      }
+    };
+
+    checkUserPreferences();
+  }, [isConnected, address, hasCheckedPreferences]);
+
+  const handleOnboardingComplete = (preferences: any) => {
+    setUserPreferences(preferences);
+    setShowOnboarding(false);
+    setToast({
+      show: true,
+      message: "Welcome! Your preferences have been saved. 🎉",
+      type: "success",
+    });
+  };
+
+  const handlePreferencesSave = (preferences: any) => {
+    setUserPreferences(preferences);
+    setToast({
+      show: true,
+      message: "Preferences updated successfully! ✨",
+      type: "success",
+    });
+  };
 
   /* 
   // Commenting out conflicting direct Supabase usage to avoid double-fetching or conflicts
@@ -179,8 +217,6 @@ function GeneratorContent() {
   }, []);
   */
 
-  const isConnected = !!user || !!address;
-
   const handleGenerate = async () => {
     if (!isConnected) {
       setToast({
@@ -193,10 +229,9 @@ function GeneratorContent() {
 
     if (!prompt) return;
 
+    // Generate is FREE - payment only required when posting
     setIsLoading(true);
     setIsEditing(false);
-    // don't clear generated content yet if we strictly don't want to flash it away, but usually generation overwrites it
-    // setGeneratedContent("");
     setShowPreview(true);
 
     try {
@@ -210,6 +245,7 @@ function GeneratorContent() {
           platform: selectedPlatform,
           systemInstruction: systemInstructions[selectedPlatform],
           userId: user?.id,
+          address: address,
         }),
       });
 
@@ -217,8 +253,6 @@ function GeneratorContent() {
 
       if (data.result) {
         setGeneratedContent(data.result);
-        if (user) fetchCredits(user.id);
-        window.dispatchEvent(new Event("creditsUpdated"));
       } else {
         console.error("Failed to generate content");
         setToast({
@@ -366,21 +400,13 @@ function GeneratorContent() {
 
   return (
     <div className="flex flex-col bg-zinc-50 dark:bg-black">
-      <Header />
+      <Header onSettingsClick={() => setShowPreferencesModal(true)} />
 
-      <main className="flex-1 p-4 sm:px-6 lg:px-8">
+      <main className="flex-1 p-4 sm:px-6 lg:px-8 overflow-y-auto">
         <div className="container mx-auto max-w-7xl">
           <div className="mx-auto w-full max-w-3xl">
             {!showPreview && (
-              <div className="h-[calc(100vh-160px)] overflow-y-auto flex flex-col gap-3 rounded-2xl bg-white px-5 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-                <PromptInput
-                  value={prompt}
-                  onChange={setPrompt}
-                  isConnected={isConnected}
-                  hasContent={!!generatedContent}
-                  onNext={() => setShowPreview(true)}
-                />
-
+              <div className="h-[calc(100vh-160px)] py-3 pb-6 overflow-y-auto flex flex-col gap-3 rounded-2xl bg-white px-5 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
                 <PlatformSelector
                   selected={selectedPlatform}
                   onSelect={handlePlatformSelect}
@@ -397,6 +423,14 @@ function GeneratorContent() {
                   onDisconnect={handleDisconnect}
                   onConnect={handleConnect}
                   isConnected={isConnected}
+                />
+
+                <PromptInput
+                  value={prompt}
+                  onChange={setPrompt}
+                  isConnected={isConnected}
+                  hasContent={!!generatedContent}
+                  onNext={() => setShowPreview(true)}
                 />
 
                 <button
@@ -423,12 +457,14 @@ function GeneratorContent() {
             {showPreview && (
               <div className="flex flex-col gap-4">
                 <PreviewPanel
+                  user={user}
                   isLocked={!isConnected}
                   isConnected={isConnected}
                   content={generatedContent}
                   prompt={prompt}
                   platform={selectedPlatform}
-                  address={user?.id}
+                  address={address}
+                  userId={user?.id}
                   isLoading={isLoading}
                   // @ts-ignore
                   isPlatformConnected={connectedPlatforms.includes(
@@ -440,9 +476,6 @@ function GeneratorContent() {
                     setPrompt("");
                     setShowPreview(false);
                     router.push("/posts");
-                    if (user?.id) {
-                      fetchCredits(user.id);
-                    }
                   }}
                   isEditing={isEditing}
                   setIsEditing={setIsEditing}
@@ -456,6 +489,20 @@ function GeneratorContent() {
           </div>
         </div>
       </main>
+
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onComplete={handleOnboardingComplete}
+        address={address}
+      />
+
+      <UserPreferencesModal
+        isOpen={showPreferencesModal}
+        onClose={() => setShowPreferencesModal(false)}
+        address={address}
+        currentPreferences={userPreferences}
+        onSave={handlePreferencesSave}
+      />
 
       <Toast
         message={toast.message}

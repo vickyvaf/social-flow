@@ -143,11 +143,14 @@ export function PromptInput({
           </button>
         )}
       </div>
+      <label className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        Prompt
+      </label>
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Describe the content you want to create..."
-        className={`${heightTextArea} mt-3 w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500`}
+        className={`${heightTextArea} mt-1 w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500`}
       />
       <Toast
         message={toast.message}

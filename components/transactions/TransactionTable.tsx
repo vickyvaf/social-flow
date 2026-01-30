@@ -8,11 +8,12 @@ import { useAccount } from "wagmi";
 interface Transaction {
   id: string;
   created_at: string;
-  chain_id: string;
-  currency: string;
-  amount_eth: number;
+  chain: string;
+  token_symbol: string;
+  amount: number;
   tx_hash: string;
   status: "confirmed" | "pending" | "failed";
+  description?: string;
 }
 
 export function TransactionTable() {
@@ -79,7 +80,20 @@ export function TransactionTable() {
 
       const { data, error } = await dbQuery;
       if (error) throw error;
-      setTransactions(data || []);
+
+      // Map database columns to Transaction interface
+      const mappedTransactions: Transaction[] = (data || []).map((tx: any) => ({
+        id: tx.id,
+        created_at: tx.created_at,
+        chain: tx.chain_id, // map chain_id to chain
+        token_symbol: tx.currency, // map currency to token_symbol
+        amount: tx.amount_eth, // map amount_eth to amount
+        tx_hash: tx.tx_hash,
+        status: tx.status,
+        description: "", // Add if needed logic
+      }));
+
+      setTransactions(mappedTransactions);
     } catch (error) {
       console.error("Error fetching transactions:", error);
     } finally {
@@ -203,7 +217,7 @@ export function TransactionTable() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <span className="capitalize text-zinc-900 dark:text-zinc-100">
-                          {tx.chain_id || "Unknown"}
+                          {tx.chain || "Unknown"}
                         </span>
                       </div>
                     </td>
@@ -213,35 +227,41 @@ export function TransactionTable() {
                           $
                         </div>
                         <span className="text-zinc-900 dark:text-zinc-100">
-                          {tx.currency}
+                          {tx.token_symbol}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 font-medium text-zinc-900 dark:text-zinc-100">
-                      {tx.amount_eth}
+                      {typeof tx.amount === "number"
+                        ? tx.amount.toFixed(4)
+                        : tx.amount}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
                         <span className="font-mono">
-                          {tx.tx_hash.slice(0, 6)}...{tx.tx_hash.slice(-4)}
+                          {tx.tx_hash
+                            ? `${tx.tx_hash.slice(0, 6)}...${tx.tx_hash.slice(-4)}`
+                            : "N/A"}
                         </span>
-                        <button
-                          onClick={() =>
-                            navigator.clipboard.writeText(tx.tx_hash)
-                          }
-                          className="opacity-0 transition-opacity group-hover:opacity-100"
-                          title="Copy Hash"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            className="h-3.5 w-3.5"
+                        {tx.tx_hash && (
+                          <button
+                            onClick={() =>
+                              navigator.clipboard.writeText(tx.tx_hash)
+                            }
+                            className="opacity-0 transition-opacity group-hover:opacity-100"
+                            title="Copy Hash"
                           >
-                            <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
-                            <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a.5.5 0 01.146-.354l.854-.853A.5.5 0 0114.499 10h-2.378A1.5 1.5 0 0010.5 11.5v2.379a.5.5 0 01-1.002 0V9.879a.5.5 0 01.146-.353l.854-.854a.5.5 0 01.354-.146H4.5z" />
-                          </svg>
-                        </button>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              className="h-3.5 w-3.5"
+                            >
+                              <path d="M7 3.5A1.5 1.5 0 018.5 2h3.879a1.5 1.5 0 011.06.44l3.122 3.12A1.5 1.5 0 0117 6.622V12.5a1.5 1.5 0 01-1.5 1.5h-1v-3.379a3 3 0 00-.879-2.121L10.5 5.379A3 3 0 008.379 4.5H7v-1z" />
+                              <path d="M4.5 6A1.5 1.5 0 003 7.5v9A1.5 1.5 0 004.5 18h7a1.5 1.5 0 001.5-1.5v-5.879a.5.5 0 01.146-.354l.854-.853A.5.5 0 0114.499 10h-2.378A1.5 1.5 0 0010.5 11.5v2.379a.5.5 0 01-1.002 0V9.879a.5.5 0 01.146-.353l.854-.854a.5.5 0 01.354-.146H4.5z" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">

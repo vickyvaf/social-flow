@@ -135,7 +135,7 @@ export function PlatformSelector({
         }}
         platform={selectedPlatform}
       />
-      <div className="grid grid-cols-3 mt-3 gap-3">
+      <div className="grid grid-cols-3 mt-1 gap-3">
         {platforms.map((platform) => (
           <div
             key={platform.id}
