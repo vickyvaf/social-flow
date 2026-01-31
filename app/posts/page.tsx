@@ -549,7 +549,7 @@ function PostsContent() {
                         >
                           {post.status}
                         </span>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-wrap">
                           {/* @ts-ignore */}
                           {(post.post_distributions || post.platforms)?.map(
                             ({

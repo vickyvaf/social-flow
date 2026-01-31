@@ -2,9 +2,11 @@ import { Toast } from "@/components/ui/Toast";
 import { supabase } from "@/supabase/client";
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { PaymentModal } from "../PaymentModal";
+// PaymentModal removed
 import { User } from "@supabase/supabase-js";
-import { useCanAffordGeneration } from "@/hooks/useIDRX";
+import { useCanAffordGeneration, deductMockBalance } from "@/hooks/useIDRX";
+import { PRICING } from "@/lib/contracts/idrx";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PreviewPanelProps {
   user: User | null;
@@ -66,8 +68,9 @@ export function PreviewPanel({
   const [parsedOptions, setParsedOptions] = useState<string[]>([]);
   const [isScheduling, setIsScheduling] = useState(false);
   const [scheduleTime, setScheduleTime] = useState("");
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  // const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false); // Removed
 
+  const queryClient = useQueryClient();
   const { canAfford } = useCanAffordGeneration();
 
   useEffect(() => {
@@ -152,26 +155,28 @@ export function PreviewPanel({
       return;
     }
 
-    // Check if user can afford and has approval - PAYMENT REQUIRED FOR POSTING
-    if (!canAfford) {
+    // DEMO PAYMENT FLOW: Immediate deduction
+    const cost = BigInt(PRICING.PER_GENERATION); // 1000.00 IDRX
+
+    if (deductMockBalance(cost)) {
+      // Refresh UI balance
+      queryClient.invalidateQueries({ queryKey: ["idrx-balance"] });
+
       setToast({
         show: true,
-        message:
-          "Insufficient IDRX balance. Please top up your wallet to post.",
+        message: `Payment successful! Deducted ${PRICING.PER_GENERATION.slice(0, -2)} IDRX`,
+        type: "success",
+      });
+
+      // Proceed immediately
+      await executePost(scheduledForDate);
+    } else {
+      setToast({
+        show: true,
+        message: "Insufficient IDRX balance for demo.",
         type: "error",
       });
-      return;
     }
-
-    // Show payment modal - user needs to pay before posting
-    setIsPaymentModalOpen(true);
-    return;
-  };
-
-  const handlePaymentSuccess = async () => {
-    // After payment successful, proceed with posting
-    setIsPaymentModalOpen(false);
-    await executePost();
   };
 
   const executePost = async (scheduledForDate?: string) => {
@@ -718,13 +723,7 @@ export function PreviewPanel({
         onClose={() => setToast((prev) => ({ ...prev, show: false }))}
       />
 
-      <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        userId={userId || user?.id}
-        onSuccess={handlePaymentSuccess}
-        description="Post Social Media Content"
-      />
+      {/* Modal Removed */}
     </div>
   );
 }

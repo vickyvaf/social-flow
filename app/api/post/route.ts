@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
       : null;
 
     let user: any = null;
+    let walletAddress = "";
 
     if (token) {
       const { data } = await supabaseClient.auth.getUser(token);
@@ -55,11 +56,31 @@ export async function POST(request: NextRequest) {
     if (!user) {
       const userIdHeader = request.headers.get("X-User-Id");
       if (userIdHeader) {
-        // Verify this user exists in profiles (optional security check, but good practice)
-        // For now, we trust the client's claimed ID if it matches a valid UUID format or just take it,
-        // relying on the fact that only signed-in wallet users get here in UI.
-        // A more secure way would be to verify a signature, but we are keeping it simple as per existing flow.
-        user = { id: userIdHeader };
+        // If it looks like an Ethereum address, resolve it to a profile ID
+        if (userIdHeader.startsWith("0x")) {
+          walletAddress = userIdHeader; // Capture wallet address
+          const { data: profile } = await supabaseClient
+            .from("profiles")
+            .select("id")
+            .eq("wallet_address", userIdHeader)
+            .single();
+
+          if (profile) {
+            user = { id: profile.id };
+          } else {
+            console.error(
+              "Profile not found for wallet address:",
+              userIdHeader,
+            );
+            return NextResponse.json(
+              { error: "User profile not found" },
+              { status: 401 },
+            );
+          }
+        } else {
+          // Assume it's already a UUID
+          user = { id: userIdHeader };
+        }
       }
     }
 
@@ -159,8 +180,62 @@ export async function POST(request: NextRequest) {
         // Post saved successfully
         console.log("Post saved to getlate_posts:", post.id);
 
-        // We can optionally check/create oauth_accounts here if needed for caching,
-        // but the prompt asked to "directly send all to table getlate_post", so we simplify.
+        try {
+          // Resolve wallet address if not already known
+          let finalWalletAddress = walletAddress;
+          if (!finalWalletAddress) {
+            const { data: profile } = await supabaseClient
+              .from("profiles")
+              .select("wallet_address")
+              .eq("id", user.id)
+              .single();
+            if (profile) {
+              finalWalletAddress = profile.wallet_address;
+            }
+          }
+
+          // 1. Insert into post_transactions
+          const { error: txError } = await supabaseClient
+            .from("post_transactions")
+            .insert([
+              {
+                user_id: user.id,
+                post_id: post.id,
+                wallet_address:
+                  finalWalletAddress ||
+                  "0x0000000000000000000000000000000000000000", // Fallback to avoid constraint error
+                chain_id: "84532",
+                tx_hash:
+                  "0xDemo" +
+                  Math.random().toString(16).slice(2) +
+                  Date.now().toString(16),
+                amount_eth: 1000, // Cost in IDRX
+                currency: "IDRX",
+                status: "confirmed",
+                created_at: new Date().toISOString(),
+                confirmed_at: new Date().toISOString(),
+              },
+            ]);
+
+          if (txError)
+            console.error("Error creating post_transaction:", txError);
+
+          // 2. Insert into credit_usage_logs
+          const { error: logError } = await supabaseClient
+            .from("credit_usage_logs")
+            .insert([
+              {
+                user_id: user.id,
+                action: scheduledFor ? "schedule_post" : "create_post",
+                credits_used: 1000, // Cost in IDRX
+              },
+            ]);
+
+          if (logError)
+            console.error("Error creating credit_usage_log:", logError);
+        } catch (dbError) {
+          console.error("Error recording transactions:", dbError);
+        }
       }
 
       return NextResponse.json({ success: true, result: postResult });

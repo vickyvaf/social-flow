@@ -30,6 +30,18 @@ export function FaucetModal({ isOpen, onClose }: FaucetModalProps) {
   const [isSuccess, setIsSuccess] = useState(false);
   const [txHash, setTxHash] = useState<string>("");
 
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (!txHash) {
+        // Only reset if not already tracking a tx
+        setIsSuccess(false);
+        setIsProcessing(false);
+        setToast({ show: false, message: "", type: "success" });
+      }
+    }
+  }, [isOpen]); // We exclude txHash from deps to avoid loop, though checking it inside is enough
+
   const { address } = useAccount();
   const { balanceFormatted, refetch: refetchBalance } = useIDRXBalance();
 
@@ -52,15 +64,28 @@ export function FaucetModal({ isOpen, onClose }: FaucetModalProps) {
   useEffect(() => {
     if (isConfirmed) {
       setIsSuccess(true);
+
+      // Immediate refetch
       refetchBalance();
 
+      // Refetch again after 2 seconds to ensure node has updated
+      const refetchTimer = setTimeout(() => {
+        refetchBalance();
+      }, 2000);
+
       const timer = setTimeout(() => {
+        // Refetch one last time before closing
+        refetchBalance();
         onClose();
         setIsProcessing(false);
         setIsSuccess(false);
         setTxHash("");
       }, 5000);
-      return () => clearTimeout(timer);
+
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(refetchTimer);
+      };
     }
   }, [isConfirmed, onClose, refetchBalance]);
 
@@ -84,6 +109,7 @@ export function FaucetModal({ isOpen, onClose }: FaucetModalProps) {
       abi: ERC20_ABI,
       functionName: "lastClaimAt",
       args: address ? [address] : undefined,
+      chainId: 84532,
     });
 
   // Read claim interval from contract
@@ -92,8 +118,21 @@ export function FaucetModal({ isOpen, onClose }: FaucetModalProps) {
       address: IDRX_CONTRACT.address,
       abi: ERC20_ABI,
       functionName: "CLAIM_INTERVAL",
+      chainId: 84532,
     },
   );
+
+  // Read claim amount from contract
+  const { data: claimAmountRaw } = useReadContract({
+    address: IDRX_CONTRACT.address,
+    abi: ERC20_ABI,
+    functionName: "CLAIM_AMOUNT",
+    chainId: 84532,
+  });
+
+  const claimAmountFormatted = claimAmountRaw
+    ? (Number(claimAmountRaw) / 10 ** IDRX_CONTRACT.decimals).toString()
+    : FAUCET_AMOUNT_DISPLAY;
 
   // Calculate next allowed claim time
   const [timeRemaining, setTimeRemaining] = useState<string>("");
@@ -175,10 +214,10 @@ export function FaucetModal({ isOpen, onClose }: FaucetModalProps) {
         abi: ERC20_ABI,
         args: [address],
         functionName: "claim",
-        account: address,
       });
 
       setTxHash(hash);
+      setIsProcessing(false);
 
       // We rely on the useWaitForTransactionReceipt hook to handle success
       // setIsSuccess(true); will be called in useEffect
@@ -187,21 +226,23 @@ export function FaucetModal({ isOpen, onClose }: FaucetModalProps) {
 
       let errorMessage = "Failed to claim IDRX. Please try again later.";
 
+      const details = err?.shortMessage || err?.details || err?.message || "";
+
       // Check for specific errors
-      if (
-        err?.message?.includes("FaucetCooldown") ||
-        err?.message?.includes("cooldown")
-      ) {
+      if (details.includes("FaucetCooldown") || details.includes("cooldown")) {
         errorMessage =
           "You've already claimed recently. Please wait 24 hours before claiming again.";
       } else if (
-        err?.message?.includes("user rejected") ||
-        err?.message?.includes("User rejected")
+        details.includes("user rejected") ||
+        details.includes("User rejected")
       ) {
         errorMessage = "Transaction cancelled.";
-      } else if (err?.message?.includes("insufficient")) {
+      } else if (details.includes("insufficient")) {
         errorMessage =
           "Faucet contract has insufficient balance. Please try again later.";
+      } else {
+        // Show actual error if unknown
+        errorMessage = `Failed: ${details.slice(0, 100)}`;
       }
 
       setToast({
@@ -261,7 +302,7 @@ export function FaucetModal({ isOpen, onClose }: FaucetModalProps) {
                 </svg>
               </div>
               <h3 className="text-2xl font-bold text-zinc-900 dark:text-white mb-2">
-                {FAUCET_AMOUNT_DISPLAY} IDRX Claimed!
+                {claimAmountFormatted} IDRX Claimed!
               </h3>
               <p className="text-zinc-500 dark:text-zinc-400 px-4 mb-4">
                 Your tokens will arrive shortly. You can now use them to
@@ -318,7 +359,7 @@ export function FaucetModal({ isOpen, onClose }: FaucetModalProps) {
                     <span className="text-lg font-semibold text-green-600 dark:text-green-400">
                       {(
                         parseFloat(balanceFormatted) +
-                        parseFloat(FAUCET_AMOUNT_DISPLAY)
+                        parseFloat(claimAmountFormatted)
                       ).toFixed(2)}{" "}
                       IDRX
                     </span>
@@ -448,7 +489,7 @@ export function FaucetModal({ isOpen, onClose }: FaucetModalProps) {
                     height={20}
                     className="rounded-full"
                   />
-                  Claim {FAUCET_AMOUNT_DISPLAY} IDRX
+                  Claim {claimAmountFormatted} IDRX
                 </>
               )}
             </button>

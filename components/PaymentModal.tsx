@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import {
+  useAccount,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 import { parseUnits } from "viem";
 import { supabase } from "@/supabase/client";
 import { Toast } from "@/components/ui/Toast";
@@ -27,10 +31,16 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [currentStep, setCurrentStep] = useState<"approve" | "transfer" | "done">("approve");
+  const [currentStep, setCurrentStep] = useState<
+    "approve" | "transfer" | "done"
+  >("approve");
 
   const { address } = useAccount();
-  const { balance, balanceFormatted, refetch: refetchBalance } = useIDRXBalance();
+  const {
+    balance,
+    balanceFormatted,
+    refetch: refetchBalance,
+  } = useIDRXBalance();
   const { allowance, refetch: refetchAllowance } = useIDRXAllowance();
 
   const { writeContractAsync } = useWriteContract();
@@ -108,6 +118,8 @@ export function PaymentModal({
       return;
     }
 
+    // Validation removed for demo purposes
+    /* 
     if (balance < amountBigInt) {
       setToast({
         show: true,
@@ -116,6 +128,7 @@ export function PaymentModal({
       });
       return;
     }
+    */
 
     setIsProcessing(true);
 
@@ -136,7 +149,9 @@ export function PaymentModal({
           tx_hash: hash,
           token_symbol: IDRX_CONTRACT.symbol,
           token_decimals: IDRX_CONTRACT.decimals,
-          amount: parseFloat(parseUnits(amount, 0).toString()) / Math.pow(10, IDRX_CONTRACT.decimals),
+          amount:
+            parseFloat(parseUnits(amount, 0).toString()) /
+            Math.pow(10, IDRX_CONTRACT.decimals),
           status: "success",
           description: description,
         });
@@ -164,7 +179,8 @@ export function PaymentModal({
         console.error("Error recording transaction:", error);
         setToast({
           show: true,
-          message: "Payment successful but failed to record. Please contact support.",
+          message:
+            "Payment successful but failed to record. Please contact support.",
           type: "error",
         });
         setIsProcessing(false);
@@ -189,7 +205,7 @@ export function PaymentModal({
   };
 
   const amountFormatted = parseFloat(
-    parseUnits(amount, -IDRX_CONTRACT.decimals).toString()
+    parseUnits(amount, -IDRX_CONTRACT.decimals).toString(),
   ).toFixed(2);
 
   return (
@@ -285,6 +301,8 @@ export function PaymentModal({
                   </div>
                 </div>
 
+                {/* Insufficient balance warning removed for demo */}
+                {/* 
                 {balance < amountBigInt && (
                   <div className="rounded-2xl bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800">
                     <p className="text-sm text-red-600 dark:text-red-400">
@@ -292,6 +310,7 @@ export function PaymentModal({
                     </p>
                   </div>
                 )}
+                */}
 
                 {needsApproval && balance >= amountBigInt && (
                   <div className="rounded-2xl bg-blue-50 dark:bg-blue-900/20 p-4 border border-blue-200 dark:border-blue-800">
@@ -315,7 +334,7 @@ export function PaymentModal({
           <div className="flex flex-col gap-3 p-6">
             <button
               onClick={handlePay}
-              disabled={isProcessing || !address || !userId || balance < amountBigInt}
+              disabled={isProcessing || !address || !userId}
               className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isProcessing ? (
@@ -336,7 +355,9 @@ export function PaymentModal({
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  {currentStep === "approve" ? "Approving..." : "Processing Payment..."}
+                  {currentStep === "approve"
+                    ? "Approving..."
+                    : "Processing Payment..."}
                 </>
               ) : needsApproval ? (
                 <>
