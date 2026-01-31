@@ -59,14 +59,6 @@ export default function RootLayout({
         <OnchainProviders>
           {/* Mobile View Container */}
           <div className="w-full max-w-md h-[100dvh] bg-background relative flex flex-col shadow-2xl overflow-hidden [transform:translateZ(0)]">
-            <style>{`
-              @media (min-width: 768px) {
-                .md\\:hidden {
-                  display: block !important;
-                }
-              }
-            `}</style>
-
             <WalletWatcher />
 
             <main className="flex-1 overflow-y-auto scrollbar-hide pb-14">

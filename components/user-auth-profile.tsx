@@ -82,7 +82,7 @@ export function UserAuthProfile() {
       {/* Standalone Logout Button */}
       <button
         onClick={handleLogout}
-        className="hidden md:flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+        className="flex h-10 w-10 items-center justify-center rounded-full border border-transparent text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
         title="Logout"
       >
         <svg

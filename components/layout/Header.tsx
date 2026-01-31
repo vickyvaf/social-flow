@@ -23,7 +23,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
-      <div className="max-w-7xl px-5 xl:px-0 mx-auto flex h-16 items-center justify-between">
+      <div className="w-full px-5 mx-auto flex h-16 items-center justify-between">
         <div className="flex items-center gap-2">
           <Image
             src="/logo-social-flow.png"
@@ -52,7 +52,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
                   clipRule="evenodd"
                 />
               </svg>
-              <span className="hidden sm:inline">Preferences</span>
+              {/* <span className="hidden sm:inline">Preferences</span> */}
             </button>
           )}
           <UserAuthProfile />

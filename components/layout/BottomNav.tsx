@@ -28,7 +28,7 @@ export function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 block border-t border-zinc-200 bg-white/80 pb-safe backdrop-blur-lg dark:border-zinc-800 dark:bg-black/80 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 block border-t border-zinc-200 bg-white/80 pb-safe backdrop-blur-lg dark:border-zinc-800 dark:bg-black/80">
       <nav className="grid grid-cols-3 h-16 items-center px-2">
         {navLinks.map((link) => {
           const isGenerator = link.label === "Generator";
