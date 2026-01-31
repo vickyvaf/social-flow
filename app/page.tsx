@@ -402,92 +402,90 @@ function GeneratorContent() {
     <div className="flex flex-col bg-zinc-50 dark:bg-black">
       <Header onSettingsClick={() => setShowPreferencesModal(true)} />
 
-      <main className="flex-1 p-4 sm:px-6 lg:px-8 overflow-y-auto">
-        <div className="container mx-auto max-w-7xl">
-          <div className="mx-auto w-full max-w-3xl">
-            {!showPreview && (
-              <div className="h-[calc(100vh-160px)] py-3 pb-6 overflow-y-auto flex flex-col gap-3 rounded-2xl bg-white px-5 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-900 dark:ring-zinc-800">
-                <PlatformSelector
-                  selected={selectedPlatform}
-                  onSelect={handlePlatformSelect}
-                  systemInstructions={systemInstructions}
-                  setSystemInstructions={setSystemInstructions}
-                  isSettingsOpen={isSettingsOpen}
-                  setIsSettingsOpen={setIsSettingsOpen}
-                  selectedPlatform={selectedPlatform}
-                  // @ts-ignore
-                  onSaveInstruction={handleSaveInstruction}
-                  // @ts-ignore
-                  connectedPlatforms={connectedPlatforms}
-                  connectedUsernames={connectedUsernames}
-                  onDisconnect={handleDisconnect}
-                  onConnect={handleConnect}
-                  isConnected={isConnected}
-                />
+      <main className="flex-1 p-4 gap-5 overflow-y-auto">
+        {!showPreview && (
+          <>
+            <PlatformSelector
+              selected={selectedPlatform}
+              onSelect={handlePlatformSelect}
+              systemInstructions={systemInstructions}
+              setSystemInstructions={setSystemInstructions}
+              isSettingsOpen={isSettingsOpen}
+              setIsSettingsOpen={setIsSettingsOpen}
+              selectedPlatform={selectedPlatform}
+              // @ts-ignore
+              onSaveInstruction={handleSaveInstruction}
+              // @ts-ignore
+              connectedPlatforms={connectedPlatforms}
+              connectedUsernames={connectedUsernames}
+              onDisconnect={handleDisconnect}
+              onConnect={handleConnect}
+              isConnected={isConnected}
+            />
 
-                <PromptInput
-                  value={prompt}
-                  onChange={setPrompt}
-                  isConnected={isConnected}
-                  hasContent={!!generatedContent}
-                  onNext={() => setShowPreview(true)}
-                />
+            <PromptInput
+              value={prompt}
+              onChange={setPrompt}
+              isConnected={isConnected}
+              hasContent={!!generatedContent}
+              onNext={() => setShowPreview(true)}
+            />
 
-                <button
-                  onClick={handleGenerate}
-                  disabled={isLoading || !prompt}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-base font-semibold text-white transition-all hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? "Generating..." : "Generate"}
-                </button>
+            <div className="flex flex-col gap-4 my-4">
+              <button
+                onClick={handleGenerate}
+                disabled={isLoading || !prompt}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 text-base font-semibold text-white transition-all hover:bg-blue-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? "Generating..." : "Generate"}
+              </button>
 
-                <button
-                  onClick={() => {
-                    setGeneratedContent(prompt || "");
-                    setIsEditing(true);
-                    setShowPreview(true);
-                  }}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-3 text-base font-semibold text-zinc-900 transition-all hover:bg-zinc-50 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-                >
-                  Write manually
-                </button>
-              </div>
-            )}
+              <button
+                onClick={() => {
+                  setGeneratedContent(prompt || "");
+                  setIsEditing(true);
+                  setShowPreview(true);
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white py-3 text-base font-semibold text-zinc-900 transition-all hover:bg-zinc-50 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Write manually
+              </button>
+            </div>
+          </>
+        )}
 
-            {showPreview && (
-              <div className="flex flex-col gap-4">
-                <PreviewPanel
-                  user={user}
-                  isLocked={!isConnected}
-                  isConnected={isConnected}
-                  content={generatedContent}
-                  prompt={prompt}
-                  platform={selectedPlatform}
-                  address={address}
-                  userId={user?.id}
-                  isLoading={isLoading}
-                  // @ts-ignore
-                  isPlatformConnected={connectedPlatforms.includes(
-                    selectedPlatform,
-                  )}
-                  connectedPlatforms={connectedPlatforms}
-                  onPostSuccess={() => {
-                    setGeneratedContent("");
-                    setPrompt("");
-                    setShowPreview(false);
-                    router.push("/posts");
-                  }}
-                  isEditing={isEditing}
-                  setIsEditing={setIsEditing}
-                  onContentChange={setGeneratedContent}
-                  onBack={() => {
-                    setShowPreview(false);
-                  }}
-                />
-              </div>
-            )}
+        {showPreview && (
+          <div className="flex flex-col gap-4">
+            <PreviewPanel
+              user={user}
+              isLocked={!isConnected}
+              isConnected={isConnected}
+              content={generatedContent}
+              prompt={prompt}
+              platform={selectedPlatform}
+              address={address}
+              userId={user?.id}
+              isLoading={isLoading}
+              // @ts-ignore
+              isPlatformConnected={connectedPlatforms.includes(
+                selectedPlatform,
+              )}
+              connectedPlatforms={connectedPlatforms}
+              onPostSuccess={() => {
+                setGeneratedContent("");
+                setPrompt("");
+                setShowPreview(false);
+                router.push("/posts");
+              }}
+              isEditing={isEditing}
+              setIsEditing={setIsEditing}
+              onContentChange={setGeneratedContent}
+              onBack={() => {
+                setShowPreview(false);
+              }}
+            />
           </div>
-        </div>
+        )}
       </main>
 
       <OnboardingModal

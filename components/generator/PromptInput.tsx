@@ -76,7 +76,7 @@ export function PromptInput({
     : "h-[calc(100vh-500px)]";
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 mt-4">
       <div className="flex items-center justify-between">
         {/* <button
           onClick={handleGenerate}

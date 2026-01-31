@@ -20,7 +20,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     title: "Social Flow - Create Your Content",
-    description: "Create your content with AI",
+    description:
+      "Social Flow is an AI-powered platform designed to streamline social media content generation and automated posting. It integrates on-chain payment mechanisms for premium features and content management.",
     icons: {
       icon: "/logo-social-flow.png",
       apple: "/logo-social-flow.png",

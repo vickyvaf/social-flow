@@ -156,7 +156,8 @@ export function PreviewPanel({
     if (!canAfford) {
       setToast({
         show: true,
-        message: "Insufficient IDRX balance. Please top up your wallet to post.",
+        message:
+          "Insufficient IDRX balance. Please top up your wallet to post.",
         type: "error",
       });
       return;
@@ -266,8 +267,8 @@ export function PreviewPanel({
   }, []);
 
   return (
-    <div className="h-[calc(100vh-160px)] overflow-y-auto flex flex-col rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black overflow-hidden relative">
-      <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
+    <div className="overflow-y-auto flex flex-col relative h-[calc(100vh-160px)]">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {onBack && (
             <button
@@ -294,10 +295,11 @@ export function PreviewPanel({
           {isConnected && !isLocked && setIsEditing && (
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className={`p-1.5 rounded-md transition-colors ${isEditing
-                ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
-                : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                }`}
+              className={`p-1.5 rounded-md transition-colors ${
+                isEditing
+                  ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                  : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              }`}
               title={isEditing ? "View Preview" : "Edit Content"}
             >
               <svg
@@ -385,8 +387,9 @@ export function PreviewPanel({
           />
         ) : (
           <div
-            className={`h-full w-full overflow-y-auto text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 select-none transition-all duration-300 ${!isWindowFocused ? "blur-sm opacity-50" : ""
-              }`}
+            className={`h-full w-full overflow-y-auto text-sm leading-relaxed text-zinc-600 dark:text-zinc-300 select-none transition-all duration-300 ${
+              !isWindowFocused ? "blur-sm opacity-50" : ""
+            }`}
             onContextMenu={(e) => e.preventDefault()}
           >
             <ReactMarkdown
@@ -431,7 +434,7 @@ export function PreviewPanel({
         )}
       </div>
 
-      <div className="border-t border-zinc-100 bg-zinc-50/50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="border-t border-zinc-100 bg-zinc-50/50 dark:border-zinc-800 dark:bg-zinc-900">
         <button
           onClick={() => handlePost()}
           disabled={!content || isPosting || isScheduling}
@@ -642,10 +645,11 @@ export function PreviewPanel({
 
                 <div className="space-y-2">
                   <div
-                    className={`flex items-center justify-between rounded-lg border p-3 transition-colors cursor-pointer ${customSelectedPlatforms.length === 0
-                      ? "border-blue-500 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20"
-                      : "border-zinc-100 dark:border-zinc-800"
-                      }`}
+                    className={`flex items-center justify-between rounded-lg border p-3 transition-colors cursor-pointer ${
+                      customSelectedPlatforms.length === 0
+                        ? "border-blue-500 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20"
+                        : "border-zinc-100 dark:border-zinc-800"
+                    }`}
                     onClick={() => setCustomSelectedPlatforms([])}
                   >
                     <div className="flex flex-col">
@@ -668,10 +672,11 @@ export function PreviewPanel({
                     {connectedPlatforms.map((p) => (
                       <div
                         key={p}
-                        className={`flex items-center justify-between rounded-lg border p-3 transition-colors cursor-pointer ${customSelectedPlatforms.includes(p)
-                          ? "border-blue-500 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20"
-                          : "border-zinc-100 dark:border-zinc-800"
-                          }`}
+                        className={`flex items-center justify-between rounded-lg border p-3 transition-colors cursor-pointer ${
+                          customSelectedPlatforms.includes(p)
+                            ? "border-blue-500 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20"
+                            : "border-zinc-100 dark:border-zinc-800"
+                        }`}
                         onClick={() => {
                           if (customSelectedPlatforms.includes(p)) {
                             setCustomSelectedPlatforms(
